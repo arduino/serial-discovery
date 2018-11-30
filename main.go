@@ -118,7 +118,7 @@ func newBoardPortJSON(port *enumerator.PortDetails) *boardPortJSON {
 		IdentificationPrefs: identificationPrefs,
 	}
 	if port.IsUSB {
-		portJSON.ProtocolLabel = "USB Serial Port"
+		portJSON.ProtocolLabel = "Serial Port (USB)"
 		portJSON.Prefs.Set("vendorId", "0x"+port.VID)
 		portJSON.Prefs.Set("productId", "0x"+port.PID)
 		portJSON.Prefs.Set("serialNumber", port.SerialNumber)
