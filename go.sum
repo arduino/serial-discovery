@@ -4,6 +4,10 @@ github.com/arduino/go-properties-orderedmap v0.0.0-20181003091528-89278049acd3 h
 github.com/arduino/go-properties-orderedmap v0.0.0-20181003091528-89278049acd3/go.mod h1:kiSuHm7yz3chiy8rb2MphC7ECn3MlkQFAIe4SXmQg6o=
 github.com/creack/goselect v0.0.0-20180501195510-58854f77ee8d h1:6o8WW5zZ+Ny9sbk69epnAPmBzrBaRnvci+l4+pqleeY=
 github.com/creack/goselect v0.0.0-20180501195510-58854f77ee8d/go.mod h1:gHrIcH/9UZDn2qgeTUeW5K9eZsVYCH6/60J/FHysWyE=
+github.com/pilebones/go-udev v0.0.0-20180820235104-043677e09b13 h1:Y+ynP+0QIjUejN2tsuIlWOJG1CThJy6amRuWlBL94Vg=
+github.com/pilebones/go-udev v0.0.0-20180820235104-043677e09b13/go.mod h1:MXAPLpvZeTqLpU1eO6kFXzU0uBMooSGc1MPXAcBoy1M=
+github.com/s-urbaniak/uevent v1.0.0 h1:y1e40TmDfCU0l1o/MBpimGJgo2UzTTqBl/0GF6vx/io=
+github.com/s-urbaniak/uevent v1.0.0/go.mod h1:h83SVc1NQj/EubPaK4hWyiG217xLYr+fS+Jf10COrG0=
 go.bug.st/serial.v1 v0.0.0-20180827123349-5f7892a7bb45 h1:mACY1anK6HNCZtm/DK2Rf2ZPHggVqeB0+7rY9Gl6wyI=
 go.bug.st/serial.v1 v0.0.0-20180827123349-5f7892a7bb45/go.mod h1:dRSl/CVCTf56CkXgJMDOdSwNfo2g1orOGE/gBGdvjZw=
 golang.org/x/sys v0.0.0-20181122145206-62eef0e2fa9b h1:MQE+LT/ABUuuvEZ+YQAMSXindAdUh7slEmAkup74op4=

@@ -30,6 +30,9 @@ import (
 )
 
 func main() {
+	syncStarted := false
+	var syncCloseChan chan<- bool
+
 	reader := bufio.NewReader(os.Stdin)
 	for {
 		cmd, err := reader.ReadString('\n')
@@ -42,6 +45,10 @@ func main() {
 		case "START":
 			outputMessage("start", "OK")
 		case "STOP":
+			if syncStarted {
+				syncCloseChan <- true
+				syncStarted = false
+			}
 			outputMessage("stop", "OK")
 		case "LIST":
 			outputList()
@@ -49,7 +56,14 @@ func main() {
 			outputMessage("quit", "OK")
 			os.Exit(0)
 		case "START_SYNC":
-			fallthrough
+			if syncStarted {
+				outputMessage("startSync", "OK")
+			} else if close, err := startSync(); err != nil {
+				outputError(err)
+			} else {
+				syncCloseChan = close
+				syncStarted = true
+			}
 		default:
 			outputError(fmt.Errorf("Command %s not supported", cmd))
 		}
