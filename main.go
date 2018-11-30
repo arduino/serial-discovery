@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/arduino/go-properties-orderedmap"
 	"go.bug.st/serial.v1/enumerator"
@@ -88,7 +89,7 @@ func outputList() {
 		outputError(err)
 		return
 	}
-	fmt.Println(string(d))
+	syncronizedPrintLn(string(d))
 }
 
 func newBoardPortJSON(port *enumerator.PortDetails) *boardPortJSON {
@@ -126,10 +127,18 @@ func outputMessage(eventType, message string) {
 	if err != nil {
 		outputError(err)
 	} else {
-		fmt.Println(string(d))
+		syncronizedPrintLn(string(d))
 	}
 }
 
 func outputError(err error) {
 	outputMessage("error", err.Error())
+}
+
+var stdoutMutext sync.Mutex
+
+func syncronizedPrintLn(a ...interface{}) {
+	stdoutMutext.Lock()
+	fmt.Println(a...)
+	stdoutMutext.Unlock()
 }
