@@ -72,11 +72,11 @@ func main() {
 
 type boardPortJSON struct {
 	Address             string          `json:"address"`
-	Label               string          `json:"label"`
-	Prefs               *properties.Map `json:"prefs"`
-	IdentificationPrefs *properties.Map `json:"identificationPrefs"`
-	Protocol            string          `json:"protocol"`
-	ProtocolLabel       string          `json:"protocolLabel"`
+	Label               string          `json:"label,omitempty"`
+	Prefs               *properties.Map `json:"prefs,omitempty"`
+	IdentificationPrefs *properties.Map `json:"identificationPrefs,omitempty"`
+	Protocol            string          `json:"protocol,omitempty"`
+	ProtocolLabel       string          `json:"protocolLabel,omitempty"`
 }
 
 type listOutputJSON struct {
