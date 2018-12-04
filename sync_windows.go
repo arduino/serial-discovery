@@ -21,7 +21,10 @@ import (
 	"fmt"
 	"runtime"
 	"syscall"
+	"time"
 	"unsafe"
+
+	"go.bug.st/serial.v1/enumerator"
 )
 
 //go:generate go run $GOROOT/src/syscall/mksyscall_windows.go -output zsyscall_windows.go sync_windows.go
@@ -108,11 +111,76 @@ func startSync() (chan<- bool, error) {
 		return nil, err
 	}
 	go func() {
-		// TODO: send inital port list status
+		current, err := enumerator.GetDetailedPortsList()
+		if err != nil {
+			// TODO: handle err? stop sync mode?
+			fmt.Println(err)
+			return
+		}
+		for _, port := range current {
+			outputSyncMessage(&syncOutputJSON{
+				EventType: "add",
+				Port:      newBoardPortJSON(port),
+			})
+		}
+
 		for {
 			<-event
-			fmt.Println("EVENT!")
-			// TODO: send updates
+
+			// Wait 100 ms to pile up events
+			time.Sleep(100 * time.Millisecond)
+			select {
+			case <-event:
+				// Just one event could be queued because the channel has size 1
+				// (more events coming after this one are discarded on send)
+			default:
+			}
+
+			// Send updates
+
+			updates, err := enumerator.GetDetailedPortsList()
+			if err != nil {
+				// TODO: handle err? stop sync mode?
+				fmt.Println(err)
+				continue
+			}
+
+			portListHas := func(list []*enumerator.PortDetails, port *enumerator.PortDetails) bool {
+				for _, p := range list {
+					if port.Name == p.Name && port.IsUSB == p.IsUSB {
+						if p.IsUSB &&
+							port.VID == p.VID &&
+							port.PID == p.PID &&
+							port.SerialNumber == p.SerialNumber {
+							return true
+						}
+						if !p.IsUSB {
+							return true
+						}
+					}
+				}
+				return false
+			}
+
+			for _, port := range current {
+				if !portListHas(updates, port) {
+					outputSyncMessage(&syncOutputJSON{
+						EventType: "remove",
+						Port:      &boardPortJSON{Address: port.Name},
+					})
+				}
+			}
+
+			for _, port := range updates {
+				if !portListHas(current, port) {
+					outputSyncMessage(&syncOutputJSON{
+						EventType: "add",
+						Port:      newBoardPortJSON(port),
+					})
+				}
+			}
+
+			current = updates
 		}
 	}()
 	quit := make(chan bool)
