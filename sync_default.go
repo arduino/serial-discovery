@@ -15,7 +15,7 @@
 // a commercial license, send an email to license@arduino.cc.
 //
 
-// +build !linux
+// +build !linux,!windows
 
 package main
 

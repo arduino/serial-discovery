@@ -7,5 +7,5 @@ require (
 	github.com/pilebones/go-udev v0.0.0-20180820235104-043677e09b13
 	github.com/s-urbaniak/uevent v1.0.0
 	go.bug.st/serial.v1 v0.0.0-20180827123349-5f7892a7bb45
-	golang.org/x/sys v0.0.0-20181122145206-62eef0e2fa9b // indirect
+	golang.org/x/sys v0.0.0-20181122145206-62eef0e2fa9b
 )
