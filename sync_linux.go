@@ -77,13 +77,13 @@ func startSync() (chan<- bool, error) {
 					continue
 				}
 				for _, port := range portList {
-					if !port.IsUSB || port.Name != changedPort {
+					if port.IsUSB && port.Name == changedPort {
+						outputSyncMessage(&syncOutputJSON{
+							EventType: "add",
+							Port:      newBoardPortJSON(port),
+						})
+						break
 					}
-					outputSyncMessage(&syncOutputJSON{
-						EventType: "add",
-						Port:      newBoardPortJSON(port),
-					})
-					break
 				}
 			}
 			if evt.Action == "remove" {
