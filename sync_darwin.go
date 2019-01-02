@@ -51,11 +51,6 @@ func startSync() (chan<- bool, error) {
 		Data:   0,
 		Udata:  nil,
 	}
-	// configure timeout
-	timeout := syscall.Timespec{
-		Sec:  0,
-		Nsec: 0,
-	}
 
 	closeChan := make(chan bool)
 	go func() {
@@ -91,10 +86,11 @@ func startSync() (chan<- bool, error) {
 	// Run synchronous event emitter
 	go func() {
 		// wait for events
+		events := make([]syscall.Kevent_t, 10)
+
 		for {
 			// create kevent
-			events := make([]syscall.Kevent_t, 10)
-			nev, err := syscall.Kevent(kq, []syscall.Kevent_t{ev1}, events, &timeout)
+			nev, err := syscall.Kevent(kq, []syscall.Kevent_t{ev1}, events, nil)
 			if err != nil {
 				outputError(fmt.Errorf("error decoding START_SYNC event: %s", err))
 			}
