@@ -9,3 +9,5 @@ require (
 	go.bug.st/serial.v1 v0.0.0-20180827123349-5f7892a7bb45
 	golang.org/x/sys v0.0.0-20190531132440-69e3a3a65b5b
 )
+
+go 1.13
