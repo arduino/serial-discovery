@@ -23,7 +23,7 @@ The `START` starts the internal subroutines of the discovery that looks for port
 
 #### STOP command
 
-The `STOP` command stops the discovery internal subroutines and free some resources. This command should be called if the client wants to pause the discovery for a while. The response to the quit command is:
+The `STOP` command stops the discovery internal subroutines and free some resources. This command should be called if the client wants to pause the discovery for a while. The response to the stop command is:
 
 ```json
 {
@@ -43,7 +43,7 @@ The `QUIT` command terminates the discovery. The response to quit is:
 }
 ```
 
-after this output the discovery terminates.
+after this output the tool quits.
 
 #### LIST command
 
@@ -72,13 +72,15 @@ The `LIST` command returns a list of the currently available serial ports. The f
 }
 ```
 
-The `ports` field contains a list of the available serial ports. If the serial port comes from an USB serial converter the USB VID/PID properties are also reported inside `prefs`. Inside the `identificationPrefs` instead we have only the properties useful for product identification (in this case vid/pid only that may be useful to identify the board)
+The `ports` field contains a list of the available serial ports. If the serial port comes from an USB serial converter the USB VID/PID and USB SERIAL NUMBER properties are also reported inside `prefs`. Inside the `identificationPrefs` instead we have only the properties useful for product identification (in this case USB VID/PID only that may be useful to identify the board)
 
 The list command is a one-shot command, if you need continuos monitoring of ports you should use `START_SYNC` command.
 
 #### START_SYNC command
 
-The `START_SYNC` command puts the discovery tool in "events" mode: the discovery will send `add` and `remove` events each time a new port is detected or removed respectively. An `add` and `remove` events looks like the following:
+The `START_SYNC` command puts the tool in "events" mode: the discovery will send `add` and `remove` events each time a new port is detected or removed respectively.
+
+The `add` events looks like the following:
 
 ```json
 {
@@ -101,7 +103,7 @@ The `START_SYNC` command puts the discovery tool in "events" mode: the discovery
 }
 ```
 
-it basically gather the same information as the list event but for a single port. After calling `START_SYNC` a bunch of `add` events may be generated to report all the ports available at the moment of the start.
+it basically gather the same information as the `list` event but for a single port. After calling `START_SYNC` a bunch of `add` events may be generated in sequence to report all the ports available at the moment of the start.
 
 The `remove` event looks like this:
 
@@ -118,7 +120,7 @@ in this case only the `address` field is reported.
 
 ### Example of usage
 
-Here a possible transcript of the discovery usage:
+A possible transcript of the discovery usage:
 
 ```json
 $ ./serial-discovery 
