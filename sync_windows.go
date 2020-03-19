@@ -24,7 +24,7 @@ import (
 	"time"
 	"unsafe"
 
-	"go.bug.st/serial.v1/enumerator"
+	"go.bug.st/serial/enumerator"
 )
 
 //go:generate go run $GOROOT/src/syscall/mksyscall_windows.go -output zsyscall_windows.go sync_windows.go

@@ -20,9 +20,8 @@ package main
 import (
 	"fmt"
 
-	"go.bug.st/serial.v1/enumerator"
-
 	"github.com/s-urbaniak/uevent"
+	"go.bug.st/serial/enumerator"
 )
 
 func startSync() (chan<- bool, error) {

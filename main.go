@@ -26,7 +26,7 @@ import (
 	"sync"
 
 	"github.com/arduino/go-properties-orderedmap"
-	"go.bug.st/serial.v1/enumerator"
+	"go.bug.st/serial/enumerator"
 )
 
 func main() {

@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"syscall"
 
-	"go.bug.st/serial.v1/enumerator"
+	"go.bug.st/serial/enumerator"
 )
 
 func startSync() (chan<- bool, error) {
