@@ -122,7 +122,7 @@ in this case only the `address` field is reported.
 
 A possible transcript of the discovery usage:
 
-```json
+```
 $ ./serial-discovery 
 START
 {
