@@ -25,12 +25,6 @@ import (
 )
 
 func startSync() (chan<- bool, error) {
-	// Get the current port list to send as initial "add" events
-	current, err := enumerator.GetDetailedPortsList()
-	if err != nil {
-		return nil, err
-	}
-
 	// create kqueue
 	kq, err := syscall.Kqueue()
 	if err != nil {
@@ -42,6 +36,7 @@ func startSync() (chan<- bool, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	// build kevent
 	ev1 := syscall.Kevent_t{
 		Ident:  uint64(fd),
@@ -57,7 +52,11 @@ func startSync() (chan<- bool, error) {
 		<-closeChan
 	}()
 
-	// Ouput initial port state
+	// Ouput initial port state: get the current port list to send as initial "add" events
+	current, err := enumerator.GetDetailedPortsList()
+	if err != nil {
+		return nil, err
+	}
 	for _, port := range current {
 		outputSyncMessage(&syncOutputJSON{
 			EventType: "add",
@@ -87,16 +86,27 @@ func startSync() (chan<- bool, error) {
 	go func() {
 		// wait for events
 		events := make([]syscall.Kevent_t, 10)
+		retries := 0
 
 		for {
-			// create kevent
-			nev, err := syscall.Kevent(kq, []syscall.Kevent_t{ev1}, events, nil)
-			if err != nil {
-				outputError(fmt.Errorf("error decoding START_SYNC event: %s", err))
+			for {
+				t100ms := syscall.Timespec{Nsec: 100000000, Sec: 0}
+				n, err := syscall.Kevent(kq, []syscall.Kevent_t{ev1}, events, &t100ms)
+				if err == syscall.EINTR {
+					continue
+				}
+				if err != nil {
+					outputError(fmt.Errorf("error decoding START_SYNC event: %s", err))
+				}
+				// if there is an event retry up to 5 times
+				if n > 0 {
+					retries = 5
+				}
+				break
 			}
-			// check if there was an event
-			for i := 0; i < nev; i++ {
 
+			for retries > 0 {
+				retries--
 				updates, _ := enumerator.GetDetailedPortsList()
 
 				for _, port := range current {
