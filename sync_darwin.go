@@ -47,11 +47,6 @@ func startSync() (chan<- bool, error) {
 		Udata:  nil,
 	}
 
-	closeChan := make(chan bool)
-	go func() {
-		<-closeChan
-	}()
-
 	// Ouput initial port state: get the current port list to send as initial "add" events
 	current, err := enumerator.GetDetailedPortsList()
 	if err != nil {
@@ -83,6 +78,8 @@ func startSync() (chan<- bool, error) {
 	}
 
 	// Run synchronous event emitter
+	closeChan := make(chan bool)
+
 	go func() {
 		// wait for events
 		events := make([]syscall.Kevent_t, 10)
@@ -92,6 +89,13 @@ func startSync() (chan<- bool, error) {
 			for {
 				t100ms := syscall.Timespec{Nsec: 100000000, Sec: 0}
 				n, err := syscall.Kevent(kq, []syscall.Kevent_t{ev1}, events, &t100ms)
+				select {
+				case <-closeChan:
+					syscall.Close(kq)
+					syscall.Close(fd)
+					return
+				default:
+				}
 				if err == syscall.EINTR {
 					continue
 				}
