@@ -1,0 +1,24 @@
+version: "3"
+
+includes:
+  dist: ./DistTasks.yml
+
+tasks:
+  build:
+    desc: Build the project
+    cmds:
+      - go build -v {{.LDFLAGS}}
+
+vars:
+  PROJECT_NAME: "serial-discovery"
+  DIST_DIR: "dist"
+  VERSION:
+    sh: echo "$(git describe --tags --dirty --broken)"
+  TIMESTAMP:
+    sh: echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+  LDFLAGS: >
+    -ldflags
+    '
+    -X github.com/arduino/serial-discovery/version.Tag={{.VERSION}}
+    -X github.com/arduino/serial-discovery/version.Timestamp={{.TIMESTAMP}}
+    '
