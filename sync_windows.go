@@ -27,7 +27,7 @@ import (
 	"go.bug.st/serial/enumerator"
 )
 
-//go:generate go run $GOROOT/src/syscall/mksyscall_windows.go -output zsyscall_windows.go sync_windows.go
+//go:generate go run golang.org/x/sys/windows/mkwinsyscall -output zsyscall_windows.go sync_windows.go
 
 //sys getModuleHandle(moduleName *byte) (handle syscall.Handle, err error) = GetModuleHandleA
 //sys registerClass(wndClass *wndClass) (atom uint16, err error) = user32.RegisterClassA
