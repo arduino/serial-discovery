@@ -1,7 +1,7 @@
 //
 // This file is part of serial-discovery.
 //
-// Copyright 2018 ARDUINO SA (http://www.arduino.cc/)
+// Copyright 2021 ARDUINO SA (http://www.arduino.cc/)
 //
 // This software is released under the GNU General Public License version 3,
 // which covers the main part of arduino-cli.
@@ -26,10 +26,17 @@ import (
 	"sync"
 
 	"github.com/arduino/go-properties-orderedmap"
+	"github.com/arduino/serial-discovery/version"
 	"go.bug.st/serial/enumerator"
 )
 
 func main() {
+	parseArgs()
+	if args.showVersion {
+		fmt.Printf("serial-discovery %s (build timestamp: %s)\n", version.Tag, version.Timestamp)
+		return
+	}
+
 	syncStarted := false
 	var syncCloseChan chan<- bool
 
