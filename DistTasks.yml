@@ -34,7 +34,7 @@ tasks:
     desc: Create the checksums file
     dir: "{{ .DIST_DIR }}"
     cmds:
-      - sha256sum serial-discovery_v1.2.0-dirty_*.* > {{ .CHECKSUM_FILE }}
+      - sha256sum {{ .PROJECT_NAME }}_{{ .VERSION }}_*.* > {{ .CHECKSUM_FILE }}
 
   Windows_32bit:
     desc: Builds Windows 32 bit binaries
