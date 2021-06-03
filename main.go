@@ -46,7 +46,11 @@ func main() {
 	for {
 		fullCmd, err := reader.ReadString('\n')
 		if err != nil {
-			outputError(err)
+			output(&genericMessageJSON{
+				EventType: "command_error",
+				Error:     true,
+				Message:   err.Error(),
+			})
 			os.Exit(1)
 		}
 		split := strings.Split(fullCmd, " ")
@@ -104,18 +108,27 @@ func main() {
 			os.Exit(0)
 		case "START_SYNC":
 			if syncStarted {
+				// sync already started, just acknowledge again...
+				output(&genericMessageJSON{
+					EventType: "start_sync",
+					Message:   "OK",
+				})
 			} else if close, err := startSync(); err != nil {
-				outputError(err)
+				output(&genericMessageJSON{
+					EventType: "start_sync",
+					Error:     true,
+					Message:   err.Error(),
+				})
 			} else {
 				syncCloseChan = close
 				syncStarted = true
 			}
-			output(&genericMessageJSON{
-				EventType: "start_sync",
-				Message:   "OK",
-			})
 		default:
-			outputError(fmt.Errorf("Command %s not supported", cmd))
+			output(&genericMessageJSON{
+				EventType: "command_error",
+				Error:     true,
+				Message:   fmt.Sprintf("Command %s not supported", cmd),
+			})
 		}
 	}
 }
@@ -137,7 +150,11 @@ type listOutputJSON struct {
 func outputList() {
 	list, err := enumerator.GetDetailedPortsList()
 	if err != nil {
-		outputError(err)
+		output(&genericMessageJSON{
+			EventType: "list",
+			Error:     true,
+			Message:   err.Error(),
+		})
 		return
 	}
 	portsJSON := []*boardPortJSON{}
@@ -145,15 +162,10 @@ func outputList() {
 		portJSON := newBoardPortJSON(port)
 		portsJSON = append(portsJSON, portJSON)
 	}
-	d, err := json.MarshalIndent(&listOutputJSON{
+	output(&listOutputJSON{
 		EventType: "list",
 		Ports:     portsJSON,
-	}, "", "  ")
-	if err != nil {
-		outputError(err)
-		return
-	}
-	syncronizedPrintLn(string(d))
+	})
 }
 
 func newBoardPortJSON(port *enumerator.PortDetails) *boardPortJSON {
@@ -193,18 +205,14 @@ type genericMessageJSON struct {
 func output(msg interface{}) {
 	d, err := json.MarshalIndent(msg, "", "  ")
 	if err != nil {
-		outputError(err)
+		output(&genericMessageJSON{
+			EventType: "command_error",
+			Error:     true,
+			Message:   err.Error(),
+		})
 	} else {
 		syncronizedPrintLn(string(d))
 	}
-}
-
-func outputError(err error) {
-	output(&genericMessageJSON{
-		EventType: "command_error",
-		Error:     true,
-		Message:   err.Error(),
-	})
 }
 
 var stdoutMutext sync.Mutex

@@ -52,8 +52,12 @@ func startSync() (chan<- bool, error) {
 	if err != nil {
 		return nil, err
 	}
+	output(&genericMessageJSON{
+		EventType: "start_sync",
+		Message:   "OK",
+	})
 	for _, port := range current {
-		outputSyncMessage(&syncOutputJSON{
+		output(&syncOutputJSON{
 			EventType: "add",
 			Port:      newBoardPortJSON(port),
 		})
@@ -100,7 +104,11 @@ func startSync() (chan<- bool, error) {
 					continue
 				}
 				if err != nil {
-					outputError(fmt.Errorf("error decoding START_SYNC event: %s", err))
+					output(&genericMessageJSON{
+						EventType: "start_sync",
+						Error:     true,
+						Message:   fmt.Sprintf("error decoding START_SYNC event: %s", err),
+					})
 				}
 				// if there is an event retry up to 5 times
 				if n > 0 {
@@ -115,7 +123,7 @@ func startSync() (chan<- bool, error) {
 
 				for _, port := range current {
 					if !portListHas(updates, port) {
-						outputSyncMessage(&syncOutputJSON{
+						output(&syncOutputJSON{
 							EventType: "remove",
 							Port:      &boardPortJSON{Address: port.Name},
 						})
@@ -124,7 +132,7 @@ func startSync() (chan<- bool, error) {
 
 				for _, port := range updates {
 					if !portListHas(current, port) {
-						outputSyncMessage(&syncOutputJSON{
+						output(&syncOutputJSON{
 							EventType: "add",
 							Port:      newBoardPortJSON(port),
 						})

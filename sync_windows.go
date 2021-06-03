@@ -117,8 +117,12 @@ func startSync() (chan<- bool, error) {
 			fmt.Println(err)
 			return
 		}
+		output(&genericMessageJSON{
+			EventType: "start_sync",
+			Message:   "OK",
+		})
 		for _, port := range current {
-			outputSyncMessage(&syncOutputJSON{
+			output(&syncOutputJSON{
 				EventType: "add",
 				Port:      newBoardPortJSON(port),
 			})
@@ -164,7 +168,7 @@ func startSync() (chan<- bool, error) {
 
 			for _, port := range current {
 				if !portListHas(updates, port) {
-					outputSyncMessage(&syncOutputJSON{
+					output(&syncOutputJSON{
 						EventType: "remove",
 						Port:      &boardPortJSON{Address: port.Name},
 					})
@@ -173,7 +177,7 @@ func startSync() (chan<- bool, error) {
 
 			for _, port := range updates {
 				if !portListHas(current, port) {
-					outputSyncMessage(&syncOutputJSON{
+					output(&syncOutputJSON{
 						EventType: "add",
 						Port:      newBoardPortJSON(port),
 					})

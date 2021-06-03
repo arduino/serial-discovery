@@ -43,9 +43,14 @@ func startSync() (chan<- bool, error) {
 		syncReader.Close()
 	}()
 
+	output(&genericMessageJSON{
+		EventType: "start_sync",
+		Message:   "OK",
+	})
+
 	// Ouput initial port state
 	for _, port := range current {
-		outputSyncMessage(&syncOutputJSON{
+		output(&syncOutputJSON{
 			EventType: "add",
 			Port:      newBoardPortJSON(port),
 		})
@@ -62,7 +67,12 @@ func startSync() (chan<- bool, error) {
 		for {
 			evt, err := dec.Decode()
 			if err != nil {
-				outputError(fmt.Errorf("error decoding START_SYNC event: %s", err))
+				output(&genericMessageJSON{
+					EventType: "start_sync",
+					Error:     true,
+					Message:   fmt.Sprintf("error decoding START_SYNC event: %s", err),
+				})
+
 				// TODO: output "stop" msg? close?
 				return
 			}
@@ -77,7 +87,7 @@ func startSync() (chan<- bool, error) {
 				}
 				for _, port := range portList {
 					if port.IsUSB && port.Name == changedPort {
-						outputSyncMessage(&syncOutputJSON{
+						output(&syncOutputJSON{
 							EventType: "add",
 							Port:      newBoardPortJSON(port),
 						})
@@ -86,7 +96,7 @@ func startSync() (chan<- bool, error) {
 				}
 			}
 			if evt.Action == "remove" {
-				outputSyncMessage(&syncOutputJSON{
+				output(&syncOutputJSON{
 					EventType: "remove",
 					Port:      &boardPortJSON{Address: changedPort},
 				})
