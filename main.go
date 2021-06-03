@@ -22,6 +22,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -42,13 +44,42 @@ func main() {
 
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		cmd, err := reader.ReadString('\n')
+		fullCmd, err := reader.ReadString('\n')
 		if err != nil {
 			outputError(err)
 			os.Exit(1)
 		}
-		cmd = strings.ToUpper(strings.TrimSpace(cmd))
+		split := strings.Split(fullCmd, " ")
+		cmd := strings.ToUpper(strings.TrimSpace(split[0]))
 		switch cmd {
+		case "HELLO":
+			re := regexp.MustCompile(`(\d+) "([^"]+)"`)
+			matches := re.FindStringSubmatch(fullCmd[6:])
+			if len(matches) != 3 {
+				output(&genericMessageJSON{
+					EventType: "command_error",
+					Error:     true,
+					Message:   "Invalid HELLO command",
+				})
+				continue
+			}
+			// userAgent := matches[2]
+			// reqProtocolVersion, err := strconv.ParseUint(matches[1], 10, 64)
+			_, err := strconv.ParseUint(matches[1], 10, 64)
+			if err != nil {
+				output(&genericMessageJSON{
+					EventType: "command_error",
+					Error:     true,
+					Message:   "Invalid protocol version: " + matches[2],
+				})
+			}
+			// fmt.Println("User agent:", userAgent)
+			// fmt.Println("Req. Protocol version:", reqProtocolVersion)
+			output(&helloMessageJSON{
+				EventType:       "hello",
+				ProtocolVersion: "1", // Protocol version 1 is the only supported for now...
+				Message:         "OK",
+			})
 		case "START":
 			output(&genericMessageJSON{
 				EventType: "start",
@@ -145,6 +176,12 @@ func newBoardPortJSON(port *enumerator.PortDetails) *boardPortJSON {
 		portJSON.IdentificationPrefs.Set("vid", "0x"+port.VID)
 	}
 	return portJSON
+}
+
+type helloMessageJSON struct {
+	EventType       string `json:"eventType"`
+	ProtocolVersion string `json:"protocolVersion"`
+	Message         string `json:"message"`
 }
 
 type genericMessageJSON struct {
