@@ -134,12 +134,11 @@ func main() {
 }
 
 type boardPortJSON struct {
-	Address             string          `json:"address"`
-	Label               string          `json:"label,omitempty"`
-	Prefs               *properties.Map `json:"prefs,omitempty"`
-	IdentificationPrefs *properties.Map `json:"identificationPrefs,omitempty"`
-	Protocol            string          `json:"protocol,omitempty"`
-	ProtocolLabel       string          `json:"protocolLabel,omitempty"`
+	Address       string          `json:"address"`
+	Label         string          `json:"label,omitempty"`
+	Protocol      string          `json:"protocol,omitempty"`
+	ProtocolLabel string          `json:"protocolLabel,omitempty"`
+	Properties    *properties.Map `json:"properties,omitempty"`
 }
 
 type listOutputJSON struct {
@@ -170,22 +169,18 @@ func outputList() {
 
 func newBoardPortJSON(port *enumerator.PortDetails) *boardPortJSON {
 	prefs := properties.NewMap()
-	identificationPrefs := properties.NewMap()
 	portJSON := &boardPortJSON{
-		Address:             port.Name,
-		Label:               port.Name,
-		Protocol:            "serial",
-		ProtocolLabel:       "Serial Port",
-		Prefs:               prefs,
-		IdentificationPrefs: identificationPrefs,
+		Address:       port.Name,
+		Label:         port.Name,
+		Protocol:      "serial",
+		ProtocolLabel: "Serial Port",
+		Properties:    prefs,
 	}
 	if port.IsUSB {
 		portJSON.ProtocolLabel = "Serial Port (USB)"
-		portJSON.Prefs.Set("vendorId", "0x"+port.VID)
-		portJSON.Prefs.Set("productId", "0x"+port.PID)
-		portJSON.Prefs.Set("serialNumber", port.SerialNumber)
-		portJSON.IdentificationPrefs.Set("pid", "0x"+port.PID)
-		portJSON.IdentificationPrefs.Set("vid", "0x"+port.VID)
+		portJSON.Properties.Set("vid", "0x"+port.VID)
+		portJSON.Properties.Set("pid", "0x"+port.PID)
+		portJSON.Properties.Set("serialNumber", port.SerialNumber)
 	}
 	return portJSON
 }
