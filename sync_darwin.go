@@ -125,7 +125,10 @@ func startSync() (chan<- bool, error) {
 					if !portListHas(updates, port) {
 						output(&syncOutputJSON{
 							EventType: "remove",
-							Port:      &boardPortJSON{Address: port.Name},
+							Port: &boardPortJSON{
+								Address:  port.Name,
+								Protocol: "serial",
+							},
 						})
 					}
 				}

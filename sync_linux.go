@@ -98,7 +98,10 @@ func startSync() (chan<- bool, error) {
 			if evt.Action == "remove" {
 				output(&syncOutputJSON{
 					EventType: "remove",
-					Port:      &boardPortJSON{Address: changedPort},
+					Port: &boardPortJSON{
+						Address:  changedPort,
+						Protocol: "serial",
+					},
 				})
 			}
 		}
