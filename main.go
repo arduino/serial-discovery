@@ -50,27 +50,39 @@ func main() {
 		cmd = strings.ToUpper(strings.TrimSpace(cmd))
 		switch cmd {
 		case "START":
-			outputMessage("start", "OK")
+			output(&genericMessageJSON{
+				EventType: "start",
+				Message:   "OK",
+			})
 		case "STOP":
 			if syncStarted {
 				syncCloseChan <- true
 				syncStarted = false
 			}
-			outputMessage("stop", "OK")
+			output(&genericMessageJSON{
+				EventType: "stop",
+				Message:   "OK",
+			})
 		case "LIST":
 			outputList()
 		case "QUIT":
-			outputMessage("quit", "OK")
+			output(&genericMessageJSON{
+				EventType: "quit",
+				Message:   "OK",
+			})
 			os.Exit(0)
 		case "START_SYNC":
 			if syncStarted {
-				outputMessage("startSync", "OK")
 			} else if close, err := startSync(); err != nil {
 				outputError(err)
 			} else {
 				syncCloseChan = close
 				syncStarted = true
 			}
+			output(&genericMessageJSON{
+				EventType: "start_sync",
+				Message:   "OK",
+			})
 		default:
 			outputError(fmt.Errorf("Command %s not supported", cmd))
 		}
@@ -135,16 +147,14 @@ func newBoardPortJSON(port *enumerator.PortDetails) *boardPortJSON {
 	return portJSON
 }
 
-type messageOutputJSON struct {
+type genericMessageJSON struct {
 	EventType string `json:"eventType"`
+	Error     bool   `json:"error,omitempty"`
 	Message   string `json:"message"`
 }
 
-func outputMessage(eventType, message string) {
-	d, err := json.MarshalIndent(&messageOutputJSON{
-		EventType: eventType,
-		Message:   message,
-	}, "", "  ")
+func output(msg interface{}) {
+	d, err := json.MarshalIndent(msg, "", "  ")
 	if err != nil {
 		outputError(err)
 	} else {
@@ -153,7 +163,11 @@ func outputMessage(eventType, message string) {
 }
 
 func outputError(err error) {
-	outputMessage("error", err.Error())
+	output(&genericMessageJSON{
+		EventType: "command_error",
+		Error:     true,
+		Message:   err.Error(),
+	})
 }
 
 var stdoutMutext sync.Mutex
