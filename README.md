@@ -25,7 +25,7 @@ or:
 
 `HELLO 1 "arduino-cli"`
 
-in this case the protocol version requested by the clien is `1` (at the moment of writing there were no other revisions of the protocol).
+in this case the protocol version requested by the client is `1` (at the moment of writing there were no other revisions of the protocol).
 The response to the command is:
 
 ```json
