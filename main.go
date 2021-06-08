@@ -67,9 +67,8 @@ func main() {
 				})
 				continue
 			}
-			// userAgent := matches[2]
-			// reqProtocolVersion, err := strconv.ParseUint(matches[1], 10, 64)
-			_, err := strconv.ParseUint(matches[1], 10, 64)
+			_ /* userAgent */ = matches[2]
+			_ /* reqProtocolVersion */, err := strconv.ParseUint(matches[1], 10, 64)
 			if err != nil {
 				output(&genericMessageJSON{
 					EventType: "command_error",
@@ -77,8 +76,6 @@ func main() {
 					Message:   "Invalid protocol version: " + matches[2],
 				})
 			}
-			// fmt.Println("User agent:", userAgent)
-			// fmt.Println("Req. Protocol version:", reqProtocolVersion)
 			output(&helloMessageJSON{
 				EventType:       "hello",
 				ProtocolVersion: 1, // Protocol version 1 is the only supported for now...
