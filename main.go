@@ -22,6 +22,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -42,48 +44,98 @@ func main() {
 
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		cmd, err := reader.ReadString('\n')
+		fullCmd, err := reader.ReadString('\n')
 		if err != nil {
-			outputError(err)
+			output(&genericMessageJSON{
+				EventType: "command_error",
+				Error:     true,
+				Message:   err.Error(),
+			})
 			os.Exit(1)
 		}
-		cmd = strings.ToUpper(strings.TrimSpace(cmd))
+		split := strings.Split(fullCmd, " ")
+		cmd := strings.ToUpper(strings.TrimSpace(split[0]))
 		switch cmd {
+		case "HELLO":
+			re := regexp.MustCompile(`(\d+) "([^"]+)"`)
+			matches := re.FindStringSubmatch(fullCmd[6:])
+			if len(matches) != 3 {
+				output(&genericMessageJSON{
+					EventType: "command_error",
+					Error:     true,
+					Message:   "Invalid HELLO command",
+				})
+				continue
+			}
+			_ /* userAgent */ = matches[2]
+			_ /* reqProtocolVersion */, err := strconv.ParseUint(matches[1], 10, 64)
+			if err != nil {
+				output(&genericMessageJSON{
+					EventType: "command_error",
+					Error:     true,
+					Message:   "Invalid protocol version: " + matches[2],
+				})
+			}
+			output(&helloMessageJSON{
+				EventType:       "hello",
+				ProtocolVersion: 1, // Protocol version 1 is the only supported for now...
+				Message:         "OK",
+			})
 		case "START":
-			outputMessage("start", "OK")
+			output(&genericMessageJSON{
+				EventType: "start",
+				Message:   "OK",
+			})
 		case "STOP":
 			if syncStarted {
 				syncCloseChan <- true
 				syncStarted = false
 			}
-			outputMessage("stop", "OK")
+			output(&genericMessageJSON{
+				EventType: "stop",
+				Message:   "OK",
+			})
 		case "LIST":
 			outputList()
 		case "QUIT":
-			outputMessage("quit", "OK")
+			output(&genericMessageJSON{
+				EventType: "quit",
+				Message:   "OK",
+			})
 			os.Exit(0)
 		case "START_SYNC":
 			if syncStarted {
-				outputMessage("startSync", "OK")
+				// sync already started, just acknowledge again...
+				output(&genericMessageJSON{
+					EventType: "start_sync",
+					Message:   "OK",
+				})
 			} else if close, err := startSync(); err != nil {
-				outputError(err)
+				output(&genericMessageJSON{
+					EventType: "start_sync",
+					Error:     true,
+					Message:   err.Error(),
+				})
 			} else {
 				syncCloseChan = close
 				syncStarted = true
 			}
 		default:
-			outputError(fmt.Errorf("Command %s not supported", cmd))
+			output(&genericMessageJSON{
+				EventType: "command_error",
+				Error:     true,
+				Message:   fmt.Sprintf("Command %s not supported", cmd),
+			})
 		}
 	}
 }
 
 type boardPortJSON struct {
-	Address             string          `json:"address"`
-	Label               string          `json:"label,omitempty"`
-	Prefs               *properties.Map `json:"prefs,omitempty"`
-	IdentificationPrefs *properties.Map `json:"identificationPrefs,omitempty"`
-	Protocol            string          `json:"protocol,omitempty"`
-	ProtocolLabel       string          `json:"protocolLabel,omitempty"`
+	Address       string          `json:"address"`
+	Label         string          `json:"label,omitempty"`
+	Protocol      string          `json:"protocol,omitempty"`
+	ProtocolLabel string          `json:"protocolLabel,omitempty"`
+	Properties    *properties.Map `json:"properties,omitempty"`
 }
 
 type listOutputJSON struct {
@@ -94,7 +146,11 @@ type listOutputJSON struct {
 func outputList() {
 	list, err := enumerator.GetDetailedPortsList()
 	if err != nil {
-		outputError(err)
+		output(&genericMessageJSON{
+			EventType: "list",
+			Error:     true,
+			Message:   err.Error(),
+		})
 		return
 	}
 	portsJSON := []*boardPortJSON{}
@@ -102,58 +158,53 @@ func outputList() {
 		portJSON := newBoardPortJSON(port)
 		portsJSON = append(portsJSON, portJSON)
 	}
-	d, err := json.MarshalIndent(&listOutputJSON{
+	output(&listOutputJSON{
 		EventType: "list",
 		Ports:     portsJSON,
-	}, "", "  ")
-	if err != nil {
-		outputError(err)
-		return
-	}
-	syncronizedPrintLn(string(d))
+	})
 }
 
 func newBoardPortJSON(port *enumerator.PortDetails) *boardPortJSON {
 	prefs := properties.NewMap()
-	identificationPrefs := properties.NewMap()
 	portJSON := &boardPortJSON{
-		Address:             port.Name,
-		Label:               port.Name,
-		Protocol:            "serial",
-		ProtocolLabel:       "Serial Port",
-		Prefs:               prefs,
-		IdentificationPrefs: identificationPrefs,
+		Address:       port.Name,
+		Label:         port.Name,
+		Protocol:      "serial",
+		ProtocolLabel: "Serial Port",
+		Properties:    prefs,
 	}
 	if port.IsUSB {
 		portJSON.ProtocolLabel = "Serial Port (USB)"
-		portJSON.Prefs.Set("vendorId", "0x"+port.VID)
-		portJSON.Prefs.Set("productId", "0x"+port.PID)
-		portJSON.Prefs.Set("serialNumber", port.SerialNumber)
-		portJSON.IdentificationPrefs.Set("pid", "0x"+port.PID)
-		portJSON.IdentificationPrefs.Set("vid", "0x"+port.VID)
+		portJSON.Properties.Set("vid", "0x"+port.VID)
+		portJSON.Properties.Set("pid", "0x"+port.PID)
+		portJSON.Properties.Set("serialNumber", port.SerialNumber)
 	}
 	return portJSON
 }
 
-type messageOutputJSON struct {
+type helloMessageJSON struct {
+	EventType       string `json:"eventType"`
+	ProtocolVersion int    `json:"protocolVersion"`
+	Message         string `json:"message"`
+}
+
+type genericMessageJSON struct {
 	EventType string `json:"eventType"`
+	Error     bool   `json:"error,omitempty"`
 	Message   string `json:"message"`
 }
 
-func outputMessage(eventType, message string) {
-	d, err := json.MarshalIndent(&messageOutputJSON{
-		EventType: eventType,
-		Message:   message,
-	}, "", "  ")
+func output(msg interface{}) {
+	d, err := json.MarshalIndent(msg, "", "  ")
 	if err != nil {
-		outputError(err)
+		output(&genericMessageJSON{
+			EventType: "command_error",
+			Error:     true,
+			Message:   err.Error(),
+		})
 	} else {
 		syncronizedPrintLn(string(d))
 	}
-}
-
-func outputError(err error) {
-	outputMessage("error", err.Error())
 }
 
 var stdoutMutext sync.Mutex

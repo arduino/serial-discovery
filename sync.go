@@ -17,18 +17,7 @@
 
 package main
 
-import "encoding/json"
-
 type syncOutputJSON struct {
 	EventType string         `json:"eventType"`
 	Port      *boardPortJSON `json:"port"`
-}
-
-func outputSyncMessage(message *syncOutputJSON) {
-	d, err := json.MarshalIndent(message, "", "  ")
-	if err != nil {
-		outputError(err)
-	} else {
-		syncronizedPrintLn(string(d))
-	}
 }
