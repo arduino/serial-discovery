@@ -31,7 +31,7 @@ The response to the command is:
 ```json
 {
   "eventType": "hello",
-  "protocolVersion": "1",
+  "protocolVersion": 1,
   "message": "OK"
 }
 ```

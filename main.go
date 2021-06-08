@@ -81,7 +81,7 @@ func main() {
 			// fmt.Println("Req. Protocol version:", reqProtocolVersion)
 			output(&helloMessageJSON{
 				EventType:       "hello",
-				ProtocolVersion: "1", // Protocol version 1 is the only supported for now...
+				ProtocolVersion: 1, // Protocol version 1 is the only supported for now...
 				Message:         "OK",
 			})
 		case "START":
@@ -187,7 +187,7 @@ func newBoardPortJSON(port *enumerator.PortDetails) *boardPortJSON {
 
 type helloMessageJSON struct {
 	EventType       string `json:"eventType"`
-	ProtocolVersion string `json:"protocolVersion"`
+	ProtocolVersion int    `json:"protocolVersion"`
 	Message         string `json:"message"`
 }
 
