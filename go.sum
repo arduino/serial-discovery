@@ -3,6 +3,8 @@ github.com/arduino/go-paths-helper v1.5.0 h1:RVo189hD+GhUS1rQ3gixwK1nSbvVR8MGIGa
 github.com/arduino/go-paths-helper v1.5.0/go.mod h1:V82BWgAAp4IbmlybxQdk9Bpkz8M4Qyx+RAFKaG9NuvU=
 github.com/arduino/go-properties-orderedmap v1.4.0 h1:YEbbzPqm1gXWDM/Jaq8tlvmh09z2qeHPJTUw9/VA4Dk=
 github.com/arduino/go-properties-orderedmap v1.4.0/go.mod h1:DKjD2VXY/NZmlingh4lSFMEYCVubfeArCsGPGDwb2yk=
+github.com/arduino/pluggable-discovery-protocol-handler v0.0.0-20210719101349-ac9e703a1362 h1:oHD/9joFV08YWb+8ZRQumaqe0H4t6lbGja0+WhXfep8=
+github.com/arduino/pluggable-discovery-protocol-handler v0.0.0-20210719101349-ac9e703a1362/go.mod h1:vQfYGJnunfcscLoUcZKqJBlEkZ/qiE28TQj+RV9UT74=
 github.com/creack/goselect v0.1.2 h1:2DNy14+JPjRBgPzAd1thbQp4BSIihxcBf0IXhQXDRa0=
 github.com/creack/goselect v0.1.2/go.mod h1:a/NhLweNvqIYMuxcMOuWY516Cimucms3DglDzQP3hKY=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
