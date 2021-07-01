@@ -61,7 +61,7 @@ func main() {
 			matches := re.FindStringSubmatch(fullCmd[6:])
 			if len(matches) != 3 {
 				output(&genericMessageJSON{
-					EventType: "command_error",
+					EventType: "hello",
 					Error:     true,
 					Message:   "Invalid HELLO command",
 				})
@@ -71,10 +71,11 @@ func main() {
 			_ /* reqProtocolVersion */, err := strconv.ParseUint(matches[1], 10, 64)
 			if err != nil {
 				output(&genericMessageJSON{
-					EventType: "command_error",
+					EventType: "hello",
 					Error:     true,
 					Message:   "Invalid protocol version: " + matches[2],
 				})
+				continue
 			}
 			output(&helloMessageJSON{
 				EventType:       "hello",
