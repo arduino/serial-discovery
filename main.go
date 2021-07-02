@@ -22,15 +22,35 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"regexp"
-	"strconv"
 	"strings"
-	"sync"
 
 	"github.com/arduino/go-properties-orderedmap"
 	"github.com/arduino/serial-discovery/version"
 	"go.bug.st/serial/enumerator"
 )
+
+var outputChan chan string = make(chan string)
+
+// readCommand return the command and its args read from stdin
+func readCommand(reader *bufio.Reader) (string, []string) {
+	fullCommand, err := reader.ReadString('\n')
+	if err != nil {
+		output(&genericMessageJSON{
+			EventType: "command_error",
+			Error:     true,
+			Message:   err.Error(),
+		})
+		os.Exit(1)
+	}
+	split := strings.Split(fullCommand, " ")
+	command := strings.ToUpper(strings.TrimSpace(split[0]))
+	args := []string{}
+	// Append args only if there are some
+	if len(split) > 1 {
+		args = append(args, split[1:]...)
+	}
+	return command, args
+}
 
 func main() {
 	parseArgs()
@@ -39,97 +59,150 @@ func main() {
 		return
 	}
 
-	syncStarted := false
-	var syncCloseChan chan<- bool
-
+	discovery := NewSerialDiscovery()
+	defer discovery.CloseOutput()
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		fullCmd, err := reader.ReadString('\n')
-		if err != nil {
-			output(&genericMessageJSON{
-				EventType: "command_error",
-				Error:     true,
-				Message:   err.Error(),
-			})
-			os.Exit(1)
-		}
-		split := strings.Split(fullCmd, " ")
-		cmd := strings.ToUpper(strings.TrimSpace(split[0]))
-		switch cmd {
+		command, args := readCommand(reader)
+
+		switch command {
 		case "HELLO":
-			re := regexp.MustCompile(`(\d+) "([^"]+)"`)
-			matches := re.FindStringSubmatch(fullCmd[6:])
-			if len(matches) != 3 {
-				output(&genericMessageJSON{
-					EventType: "hello",
-					Error:     true,
-					Message:   "Invalid HELLO command",
-				})
-				continue
-			}
-			_ /* userAgent */ = matches[2]
-			_ /* reqProtocolVersion */, err := strconv.ParseUint(matches[1], 10, 64)
-			if err != nil {
-				output(&genericMessageJSON{
-					EventType: "hello",
-					Error:     true,
-					Message:   "Invalid protocol version: " + matches[2],
-				})
-				continue
-			}
-			output(&helloMessageJSON{
-				EventType:       "hello",
-				ProtocolVersion: 1, // Protocol version 1 is the only supported for now...
-				Message:         "OK",
-			})
+			discovery.Hello(args)
 		case "START":
-			output(&genericMessageJSON{
-				EventType: "start",
-				Message:   "OK",
-			})
+			discovery.Start()
 		case "STOP":
-			if syncStarted {
-				syncCloseChan <- true
-				syncStarted = false
-			}
-			output(&genericMessageJSON{
-				EventType: "stop",
-				Message:   "OK",
-			})
+			discovery.Stop()
 		case "LIST":
-			outputList()
-		case "QUIT":
-			output(&genericMessageJSON{
-				EventType: "quit",
-				Message:   "OK",
-			})
-			os.Exit(0)
+			discovery.List()
 		case "START_SYNC":
-			if syncStarted {
-				// sync already started, just acknowledge again...
-				output(&genericMessageJSON{
-					EventType: "start_sync",
-					Message:   "OK",
-				})
-			} else if close, err := startSync(); err != nil {
-				output(&genericMessageJSON{
-					EventType: "start_sync",
-					Error:     true,
-					Message:   err.Error(),
-				})
-			} else {
-				syncCloseChan = close
-				syncStarted = true
-			}
+			discovery.StartSync()
+		case "QUIT":
+			discovery.Quit()
 		default:
-			output(&genericMessageJSON{
-				EventType: "command_error",
-				Error:     true,
-				Message:   fmt.Sprintf("Command %s not supported", cmd),
-			})
+			discovery.UnknownCommand(command)
 		}
 	}
 }
+
+// func main() {
+// 	defer close(outputChan)
+// 	parseArgs()
+// 	if args.showVersion {
+// 		fmt.Printf("serial-discovery %s (build timestamp: %s)\n", version.Tag, version.Timestamp)
+// 		return
+// 	}
+
+// 	go func() {
+// 		for s := range outputChan {
+// 			fmt.Println(s)
+// 		}
+// 	}()
+
+// 	syncStarted := false
+// 	var syncCloseChan chan<- bool
+
+// 	reader := bufio.NewReader(os.Stdin)
+// 	for {
+// 		fullCmd, err := reader.ReadString('\n')
+// 		if err != nil {
+// 			output(&genericMessageJSON{
+// 				EventType: "command_error",
+// 				Error:     true,
+// 				Message:   err.Error(),
+// 			})
+// 			os.Exit(1)
+// 		}
+// 		split := strings.Split(fullCmd, " ")
+// 		cmd := strings.ToUpper(strings.TrimSpace(split[0]))
+
+// 		// TODO: Check if initialized and cmd is HELLO
+
+// 		switch cmd {
+// 		case "HELLO":
+// 			re := regexp.MustCompile(`HELLO (\d+) "([^"]+)"`)
+// 			matches := re.FindStringSubmatch(fullCmd)
+// 			if len(matches) != 3 {
+// 				output(&genericMessageJSON{
+// 					EventType: "hello",
+// 					Error:     true,
+// 					Message:   "Invalid HELLO command",
+// 				})
+// 				continue
+// 			}
+// 			protocolVersionStr := matches[1]
+// 			protocolVersion, err := strconv.ParseUint(protocolVersionStr, 10, 64)
+// 			// This is not used for now
+// 			// userAgent := matches[2]
+// 			if err != nil {
+// 				output(&genericMessageJSON{
+// 					EventType: "hello",
+// 					Error:     true,
+// 					Message:   fmt.Sprintf("Invalid protocol version: %s", protocolVersionStr),
+// 				})
+// 				continue
+// 			}
+// 			if protocolVersion != 1 {
+// 				output(&genericMessageJSON{
+// 					EventType: "hello",
+// 					Error:     true,
+// 					Message:   fmt.Sprintf("Protocol version not supported: %d", protocolVersion),
+// 				})
+// 				continue
+// 			}
+// 			output(&helloMessageJSON{
+// 				EventType:       "hello",
+// 				ProtocolVersion: 1, // Protocol version 1 is the only supported for now...
+// 				Message:         "OK",
+// 			})
+// 		case "START":
+// 			output(&genericMessageJSON{
+// 				EventType: "start",
+// 				Message:   "OK",
+// 			})
+// 		case "STOP":
+// 			if syncStarted {
+// 				syncCloseChan <- true
+// 				syncStarted = false
+// 			}
+// 			output(&genericMessageJSON{
+// 				EventType: "stop",
+// 				Message:   "OK",
+// 			})
+// 		case "LIST":
+// 			outputList()
+// 		case "QUIT":
+// 			output(&genericMessageJSON{
+// 				EventType: "quit",
+// 				Message:   "OK",
+// 			})
+// 			os.Exit(0)
+// 		case "START_SYNC":
+// 			if syncStarted {
+// 				// sync already started, just acknowledge again...
+// 				output(&genericMessageJSON{
+// 					EventType: "start_sync",
+// 					Message:   "OK",
+// 				})
+// 			} else if close, err := startSync(); err != nil {
+// 				output(&genericMessageJSON{
+// 					EventType: "start_sync",
+// 					Error:     true,
+// 					Message:   err.Error(),
+// 				})
+// 			} else {
+// 				// TODO: syncCloseChan is never closed
+// 				syncCloseChan = close
+// 				syncStarted = true
+// 			}
+// 		default:
+// 			output(&genericMessageJSON{
+// 				EventType: "command_error",
+// 				Error:     true,
+// 				Message:   fmt.Sprintf("Command %s not supported", cmd),
+// 			})
+// 		}
+// 	}
+// }
 
 type boardPortJSON struct {
 	Address       string          `json:"address"`
@@ -185,7 +258,7 @@ func newBoardPortJSON(port *enumerator.PortDetails) *boardPortJSON {
 
 type helloMessageJSON struct {
 	EventType       string `json:"eventType"`
-	ProtocolVersion int    `json:"protocolVersion"`
+	ProtocolVersion uint64 `json:"protocolVersion"`
 	Message         string `json:"message"`
 }
 
@@ -204,14 +277,6 @@ func output(msg interface{}) {
 			Message:   err.Error(),
 		})
 	} else {
-		syncronizedPrintLn(string(d))
+		outputChan <- string(d)
 	}
-}
-
-var stdoutMutext sync.Mutex
-
-func syncronizedPrintLn(a ...interface{}) {
-	stdoutMutext.Lock()
-	fmt.Println(a...)
-	stdoutMutext.Unlock()
 }

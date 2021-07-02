@@ -24,6 +24,91 @@ import (
 	"go.bug.st/serial/enumerator"
 )
 
+func sync(interrupt <-chan bool) (<-chan interface{}, error) {
+	// Get the current port list to send as initial "add" events
+	current, err := enumerator.GetDetailedPortsList()
+	if err != nil {
+		return nil, err
+	}
+
+	// Start sync reader from udev
+	syncReader, err := uevent.NewReader()
+	if err != nil {
+		return nil, err
+	}
+
+	// This channel will be used by the caller of this function to listen for events
+	messageChan := make(chan interface{})
+
+	go func() {
+		<-interrupt
+		syncReader.Close()
+	}()
+
+	go func() {
+		defer func() {
+			// This recovers from "bufio: reader returned negative count from Read" panic
+			// when the underlying stream is closed
+			recover()
+		}()
+		defer syncReader.Close()
+		defer close(messageChan)
+
+		// Initial burst of ports, only done once
+		for _, port := range current {
+			messageChan <- &syncOutputJSON{
+				EventType: "add",
+				Port:      newBoardPortJSON(port),
+			}
+		}
+
+		dec := uevent.NewDecoder(syncReader)
+		for {
+			event, err := dec.Decode()
+			if err != nil {
+				messageChan <- &genericMessageJSON{
+					EventType: "start_sync",
+					Error:     true,
+					Message:   fmt.Sprintf("error decoding START_SYNC event: %s", err),
+				}
+				return
+			}
+
+			if event.Subsystem != "tty" {
+				continue
+			}
+
+			changedPort := fmt.Sprintf("/dev/%s", event.Vars["DEVNAME"])
+			switch event.Action {
+			case "add":
+				portList, err := enumerator.GetDetailedPortsList()
+				if err != nil {
+					continue
+				}
+				for _, port := range portList {
+					if port.IsUSB && port.Name == changedPort {
+						messageChan <- &syncOutputJSON{
+							EventType: "add",
+							Port:      newBoardPortJSON(port),
+						}
+						break
+					}
+				}
+			case "remove":
+				messageChan <- &syncOutputJSON{
+					EventType: "remove",
+					Port: &boardPortJSON{
+						Address:  changedPort,
+						Protocol: "serial",
+					},
+				}
+			}
+		}
+	}()
+
+	return messageChan, nil
+}
+
 func startSync() (chan<- bool, error) {
 	// Get the current port list to send as initial "add" events
 	current, err := enumerator.GetDetailedPortsList()

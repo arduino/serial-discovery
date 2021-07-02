@@ -17,7 +17,27 @@
 
 package main
 
+import "go.bug.st/serial/enumerator"
+
 type syncOutputJSON struct {
 	EventType string         `json:"eventType"`
 	Port      *boardPortJSON `json:"port"`
+}
+
+// Helper function to avoid decoding event messages
+func portListHas(list []*enumerator.PortDetails, port *enumerator.PortDetails) bool {
+	for _, p := range list {
+		if port.Name == p.Name && port.IsUSB == p.IsUSB {
+			if p.IsUSB &&
+				port.VID == p.VID &&
+				port.PID == p.PID &&
+				port.SerialNumber == p.SerialNumber {
+				return true
+			}
+			if !p.IsUSB {
+				return true
+			}
+		}
+	}
+	return false
 }

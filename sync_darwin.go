@@ -24,6 +24,115 @@ import (
 	"go.bug.st/serial/enumerator"
 )
 
+func sync(interrupt <-chan bool) (<-chan interface{}, error) {
+	// create kqueue
+	kq, err := syscall.Kqueue()
+	if err != nil {
+		return nil, err
+	}
+
+	// open folder
+	fd, err := syscall.Open("/dev", syscall.O_RDONLY, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	// build kevent
+	ev1 := syscall.Kevent_t{
+		Ident:  uint64(fd),
+		Filter: syscall.EVFILT_VNODE,
+		Flags:  syscall.EV_ADD | syscall.EV_ENABLE | syscall.EV_ONESHOT,
+		Fflags: syscall.NOTE_DELETE | syscall.NOTE_WRITE,
+		Data:   0,
+		Udata:  nil,
+	}
+
+	// Get the current port list to send as initial "add" events
+	current, err := enumerator.GetDetailedPortsList()
+	if err != nil {
+		return nil, err
+	}
+
+	// This chanell will be used by the caller of this function to listen for events
+	eventChan := make(chan interface{})
+
+	go func() {
+		defer close(eventChan)
+		defer syscall.Close(kq)
+		defer syscall.Close(fd)
+
+		// Initial burst of ports, only done once
+		for _, port := range current {
+			eventChan <- &syncOutputJSON{
+				EventType: "add",
+				Port:      newBoardPortJSON(port),
+			}
+		}
+
+		events := make([]syscall.Kevent_t, 10)
+		retries := 0
+		for {
+			select {
+			// Stop the sync when asked
+			case <-interrupt:
+				return
+			default:
+				// Keep going
+			}
+
+			for {
+				t100ms := syscall.Timespec{Nsec: 100000000, Sec: 0}
+				n, err := syscall.Kevent(kq, []syscall.Kevent_t{ev1}, events, &t100ms)
+				if err == syscall.EINTR {
+					continue
+				}
+				if err != nil {
+					eventChan <- &genericMessageJSON{
+						EventType: "start_sync",
+						Error:     true,
+						Message:   fmt.Sprintf("error decoding START_SYNC event: %s", err),
+					}
+				}
+				// if there is an event retry up to 5 times
+				if n > 0 {
+					retries = 5
+				}
+				break
+			}
+
+			for retries > 0 {
+				retries--
+				updates, _ := enumerator.GetDetailedPortsList()
+
+				for _, port := range current {
+					if !portListHas(updates, port) {
+						eventChan <- &syncOutputJSON{
+							EventType: "remove",
+							Port: &boardPortJSON{
+								Address:  port.Name,
+								Protocol: "serial",
+							},
+						}
+					}
+				}
+
+				for _, port := range updates {
+					if !portListHas(current, port) {
+						eventChan <- &syncOutputJSON{
+							EventType: "add",
+							Port:      newBoardPortJSON(port),
+						}
+					}
+				}
+
+				current = updates
+			}
+		}
+	}()
+
+	return eventChan, nil
+}
+
 func startSync() (chan<- bool, error) {
 	// create kqueue
 	kq, err := syscall.Kqueue()

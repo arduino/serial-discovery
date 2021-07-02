@@ -101,6 +101,10 @@ func init() {
 	runtime.LockOSThread()
 }
 
+func sync(interrupt <-chan bool) (<-chan interface{}, error) {
+	// TODO
+}
+
 func startSync() (chan<- bool, error) {
 	startResult := make(chan error)
 	event := make(chan bool, 1)

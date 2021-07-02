@@ -24,3 +24,7 @@ import "fmt"
 func startSync() (chan<- bool, error) {
 	return nil, fmt.Errorf("Command START_SYNC not supported")
 }
+
+func sync(<-chan bool) error {
+	return fmt.Errorf("Command START_SYNC not supported")
+}
