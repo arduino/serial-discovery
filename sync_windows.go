@@ -24,6 +24,7 @@ import (
 	"time"
 	"unsafe"
 
+	discovery "github.com/arduino/pluggable-discovery-protocol-handler"
 	"go.bug.st/serial/enumerator"
 )
 
@@ -101,7 +102,7 @@ func init() {
 	runtime.LockOSThread()
 }
 
-func startSync() (chan<- bool, error) {
+func startSync(eventCB discovery.EventCallback) (chan<- bool, error) {
 	startResult := make(chan error)
 	event := make(chan bool, 1)
 	go func() {
@@ -114,18 +115,10 @@ func startSync() (chan<- bool, error) {
 		current, err := enumerator.GetDetailedPortsList()
 		if err != nil {
 			// TODO: handle err? stop sync mode?
-			fmt.Println(err)
-			return
+			//fmt.Println(err)
 		}
-		output(&genericMessageJSON{
-			EventType: "start_sync",
-			Message:   "OK",
-		})
 		for _, port := range current {
-			output(&syncOutputJSON{
-				EventType: "add",
-				Port:      newBoardPortJSON(port),
-			})
+			eventCB("add", toDiscoveryPort(port))
 		}
 
 		for {
@@ -145,7 +138,7 @@ func startSync() (chan<- bool, error) {
 			updates, err := enumerator.GetDetailedPortsList()
 			if err != nil {
 				// TODO: handle err? stop sync mode?
-				fmt.Println(err)
+				//fmt.Println(err)
 				continue
 			}
 
@@ -168,22 +161,16 @@ func startSync() (chan<- bool, error) {
 
 			for _, port := range current {
 				if !portListHas(updates, port) {
-					output(&syncOutputJSON{
-						EventType: "remove",
-						Port: &boardPortJSON{
-							Address:  port.Name,
-							Protocol: "serial",
-						},
+					eventCB("remove", &discovery.Port{
+						Address:  port.Name,
+						Protocol: "serial",
 					})
 				}
 			}
 
 			for _, port := range updates {
 				if !portListHas(current, port) {
-					output(&syncOutputJSON{
-						EventType: "add",
-						Port:      newBoardPortJSON(port),
-					})
+					eventCB("add", toDiscoveryPort(port))
 				}
 			}
 

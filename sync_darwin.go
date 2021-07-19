@@ -18,13 +18,13 @@
 package main
 
 import (
-	"fmt"
 	"syscall"
 
+	discovery "github.com/arduino/pluggable-discovery-protocol-handler"
 	"go.bug.st/serial/enumerator"
 )
 
-func startSync() (chan<- bool, error) {
+func startSync(eventCB discovery.EventCallback) (chan<- bool, error) {
 	// create kqueue
 	kq, err := syscall.Kqueue()
 	if err != nil {
@@ -45,22 +45,6 @@ func startSync() (chan<- bool, error) {
 		Fflags: syscall.NOTE_DELETE | syscall.NOTE_WRITE,
 		Data:   0,
 		Udata:  nil,
-	}
-
-	// Ouput initial port state: get the current port list to send as initial "add" events
-	current, err := enumerator.GetDetailedPortsList()
-	if err != nil {
-		return nil, err
-	}
-	output(&genericMessageJSON{
-		EventType: "start_sync",
-		Message:   "OK",
-	})
-	for _, port := range current {
-		output(&syncOutputJSON{
-			EventType: "add",
-			Port:      newBoardPortJSON(port),
-		})
 	}
 
 	// Helper function to avoid decoging kqueue event messages
@@ -85,6 +69,15 @@ func startSync() (chan<- bool, error) {
 	closeChan := make(chan bool)
 
 	go func() {
+		// Ouput initial port state: get the current port list to send as initial "add" events
+		current, err := enumerator.GetDetailedPortsList()
+		if err != nil {
+			// TODO: how to handle errors? should we just retry silently?
+		}
+		for _, port := range current {
+			eventCB("add", toDiscoveryPort(port))
+		}
+
 		// wait for events
 		events := make([]syscall.Kevent_t, 10)
 		retries := 0
@@ -104,11 +97,12 @@ func startSync() (chan<- bool, error) {
 					continue
 				}
 				if err != nil {
-					output(&genericMessageJSON{
-						EventType: "start_sync",
-						Error:     true,
-						Message:   fmt.Sprintf("error decoding START_SYNC event: %s", err),
-					})
+					// output(&genericMessageJSON{
+					// 	EventType: "start_sync",
+					// 	Error:     true,
+					// 	Message:   fmt.Sprintf("error decoding START_SYNC event: %s", err),
+					// })
+					// TODO: how to handle errors? should we just retry silently?
 				}
 				// if there is an event retry up to 5 times
 				if n > 0 {
@@ -123,22 +117,16 @@ func startSync() (chan<- bool, error) {
 
 				for _, port := range current {
 					if !portListHas(updates, port) {
-						output(&syncOutputJSON{
-							EventType: "remove",
-							Port: &boardPortJSON{
-								Address:  port.Name,
-								Protocol: "serial",
-							},
+						eventCB("remove", &discovery.Port{
+							Address:  port.Name,
+							Protocol: "serial",
 						})
 					}
 				}
 
 				for _, port := range updates {
 					if !portListHas(current, port) {
-						output(&syncOutputJSON{
-							EventType: "add",
-							Port:      newBoardPortJSON(port),
-						})
+						eventCB("add", toDiscoveryPort(port))
 					}
 				}
 
