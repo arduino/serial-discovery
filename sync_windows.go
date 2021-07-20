@@ -134,45 +134,12 @@ func startSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback)
 			}
 
 			// Send updates
-
 			updates, err := enumerator.GetDetailedPortsList()
 			if err != nil {
 				errorCB(fmt.Sprintf("Error enumarating serial ports: %s", err))
 				return
 			}
-
-			portListHas := func(list []*enumerator.PortDetails, port *enumerator.PortDetails) bool {
-				for _, p := range list {
-					if port.Name == p.Name && port.IsUSB == p.IsUSB {
-						if p.IsUSB &&
-							port.VID == p.VID &&
-							port.PID == p.PID &&
-							port.SerialNumber == p.SerialNumber {
-							return true
-						}
-						if !p.IsUSB {
-							return true
-						}
-					}
-				}
-				return false
-			}
-
-			for _, port := range current {
-				if !portListHas(updates, port) {
-					eventCB("remove", &discovery.Port{
-						Address:  port.Name,
-						Protocol: "serial",
-					})
-				}
-			}
-
-			for _, port := range updates {
-				if !portListHas(current, port) {
-					eventCB("add", toDiscoveryPort(port))
-				}
-			}
-
+			ProcessUpdates(current, updates, eventCB)
 			current = updates
 		}
 	}()
