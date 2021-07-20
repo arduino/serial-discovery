@@ -1,7 +1,7 @@
 //
 // This file is part of serial-discovery.
 //
-// Copyright 2018 ARDUINO SA (http://www.arduino.cc/)
+// Copyright 2018-2021 ARDUINO SA (http://www.arduino.cc/)
 //
 // This software is released under the GNU General Public License version 3,
 // which covers the main part of arduino-cli.
