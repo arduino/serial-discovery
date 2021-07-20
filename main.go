@@ -71,9 +71,9 @@ func (d *SerialDiscovery) List() ([]*discovery.Port, error) {
 	if err != nil {
 		return nil, err
 	}
-	ports := []*discovery.Port{}
-	for _, port := range list {
-		ports = append(ports, toDiscoveryPort(port))
+	ports := make([]*discovery.Port, len(list))
+	for i, port := range list {
+		ports[i] = toDiscoveryPort(port)
 	}
 	return ports, nil
 }
