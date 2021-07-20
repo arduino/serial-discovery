@@ -80,38 +80,34 @@ func startSync(eventCB discovery.EventCallback) (chan<- bool, error) {
 
 		// wait for events
 		events := make([]syscall.Kevent_t, 10)
-		retries := 0
 
 		for {
-			for {
-				t100ms := syscall.Timespec{Nsec: 100000000, Sec: 0}
-				n, err := syscall.Kevent(kq, []syscall.Kevent_t{ev1}, events, &t100ms)
-				select {
-				case <-closeChan:
-					syscall.Close(kq)
-					syscall.Close(fd)
-					return
-				default:
-				}
-				if err == syscall.EINTR {
-					continue
-				}
-				if err != nil {
-					// output(&genericMessageJSON{
-					// 	EventType: "start_sync",
-					// 	Error:     true,
-					// 	Message:   fmt.Sprintf("error decoding START_SYNC event: %s", err),
-					// })
-					// TODO: how to handle errors? should we just retry silently?
-				}
-				// if there is an event retry up to 5 times
-				if n > 0 {
-					retries = 5
-				}
-				break
+			t100ms := syscall.Timespec{Nsec: 100000000, Sec: 0}
+			n, err := syscall.Kevent(kq, []syscall.Kevent_t{ev1}, events, &t100ms)
+			select {
+			case <-closeChan:
+				syscall.Close(kq)
+				syscall.Close(fd)
+				return
+			default:
+			}
+			if err == syscall.EINTR {
+				continue
+			}
+			if err != nil {
+				// output(&genericMessageJSON{
+				// 	EventType: "start_sync",
+				// 	Error:     true,
+				// 	Message:   fmt.Sprintf("error decoding START_SYNC event: %s", err),
+				// })
+				// TODO: how to handle errors? should we just retry silently?
+			}
+			if n <= 0 {
+				continue
 			}
 
-			for retries > 0 {
+			// if there is an event retry up to 5 times
+			for retries := 0; retries < 5; retries++ {
 				retries--
 				updates, _ := enumerator.GetDetailedPortsList()
 
