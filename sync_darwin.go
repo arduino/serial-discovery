@@ -69,6 +69,9 @@ func startSync(eventCB discovery.EventCallback) (chan<- bool, error) {
 	closeChan := make(chan bool)
 
 	go func() {
+		defer syscall.Close(fd)
+		defer syscall.Close(kq)
+
 		// Ouput initial port state: get the current port list to send as initial "add" events
 		current, err := enumerator.GetDetailedPortsList()
 		if err != nil {
@@ -86,8 +89,6 @@ func startSync(eventCB discovery.EventCallback) (chan<- bool, error) {
 			n, err := syscall.Kevent(kq, []syscall.Kevent_t{ev1}, events, &t100ms)
 			select {
 			case <-closeChan:
-				syscall.Close(kq)
-				syscall.Close(fd)
 				return
 			default:
 			}
@@ -129,6 +130,8 @@ func startSync(eventCB discovery.EventCallback) (chan<- bool, error) {
 				current = updates
 			}
 		}
+
+		<-closeChan
 	}()
 
 	return closeChan, nil
