@@ -18,12 +18,14 @@
 package main
 
 import (
+	"fmt"
+
 	discovery "github.com/arduino/pluggable-discovery-protocol-handler"
 	"github.com/s-urbaniak/uevent"
 	"go.bug.st/serial/enumerator"
 )
 
-func startSync(eventCB discovery.EventCallback) (chan<- bool, error) {
+func startSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (chan<- bool, error) {
 	// Get the current port list to send as initial "add" events
 	current, err := enumerator.GetDetailedPortsList()
 	if err != nil {
@@ -59,13 +61,7 @@ func startSync(eventCB discovery.EventCallback) (chan<- bool, error) {
 		for {
 			evt, err := dec.Decode()
 			if err != nil {
-				// output(&genericMessageJSON{
-				// 	EventType: "start_sync",
-				// 	Error:     true,
-				// 	Message:   fmt.Sprintf("error decoding START_SYNC event: %s", err),
-				// })
-
-				// TODO: silently stop events sending. Or maybe try to restart it?
+				errorCB(fmt.Sprintf("Error decoding serial event: %s", err))
 				return
 			}
 			if evt.Subsystem != "tty" {

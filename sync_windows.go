@@ -102,7 +102,7 @@ func init() {
 	runtime.LockOSThread()
 }
 
-func startSync(eventCB discovery.EventCallback) (chan<- bool, error) {
+func startSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (chan<- bool, error) {
 	startResult := make(chan error)
 	event := make(chan bool, 1)
 	go func() {
@@ -114,8 +114,8 @@ func startSync(eventCB discovery.EventCallback) (chan<- bool, error) {
 	go func() {
 		current, err := enumerator.GetDetailedPortsList()
 		if err != nil {
-			// TODO: handle err? stop sync mode?
-			//fmt.Println(err)
+			errorCB(fmt.Sprintf("Error enumarating serial ports: %s", err))
+			return
 		}
 		for _, port := range current {
 			eventCB("add", toDiscoveryPort(port))
@@ -137,9 +137,8 @@ func startSync(eventCB discovery.EventCallback) (chan<- bool, error) {
 
 			updates, err := enumerator.GetDetailedPortsList()
 			if err != nil {
-				// TODO: handle err? stop sync mode?
-				//fmt.Println(err)
-				continue
+				errorCB(fmt.Sprintf("Error enumarating serial ports: %s", err))
+				return
 			}
 
 			portListHas := func(list []*enumerator.PortDetails, port *enumerator.PortDetails) bool {
@@ -178,7 +177,10 @@ func startSync(eventCB discovery.EventCallback) (chan<- bool, error) {
 		}
 	}()
 	quit := make(chan bool)
-	// TODO: implement termination channel
+	go func() {
+		<-quit
+		// TODO: implement termination channel
+	}()
 	return quit, nil
 }
 
@@ -234,7 +236,8 @@ func initAndRunWindowHandler(startResult chan<- error, event chan<- bool) {
 	for {
 		if res, err := getMessage(&m, hwnd, 0, 0); res == 0 || res == -1 {
 			if err != nil {
-				fmt.Println(err)
+				// TODO: send err and stop sync mode.
+				// fmt.Println(err)
 			}
 			break
 		}

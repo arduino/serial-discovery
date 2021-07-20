@@ -78,8 +78,8 @@ func (d *SerialDiscovery) List() ([]*discovery.Port, error) {
 	return ports, nil
 }
 
-func (d *SerialDiscovery) StartSync(eventCB discovery.EventCallback) error {
-	close, err := startSync(eventCB)
+func (d *SerialDiscovery) StartSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) error {
+	close, err := startSync(eventCB, errorCB)
 	if err != nil {
 		return err
 	}

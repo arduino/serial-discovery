@@ -6,6 +6,10 @@ github.com/arduino/go-properties-orderedmap v1.5.0 h1:istmr13qQN3nneuU3lsqlMvI6j
 github.com/arduino/go-properties-orderedmap v1.5.0/go.mod h1:DKjD2VXY/NZmlingh4lSFMEYCVubfeArCsGPGDwb2yk=
 github.com/arduino/pluggable-discovery-protocol-handler v1.0.0 h1:Q95P3KnxRiURwbLLYrRege2Van3Blkk7dp4mbx4imVI=
 github.com/arduino/pluggable-discovery-protocol-handler v1.0.0/go.mod h1:vQfYGJnunfcscLoUcZKqJBlEkZ/qiE28TQj+RV9UT74=
+github.com/arduino/pluggable-discovery-protocol-handler v1.0.1-0.20210719160542-f46021c4d4bc h1:AlJsTB9uGmxCMcTFfAPe3umTfYM+EdEfn4oBmLN9w3o=
+github.com/arduino/pluggable-discovery-protocol-handler v1.0.1-0.20210719160542-f46021c4d4bc/go.mod h1:vQfYGJnunfcscLoUcZKqJBlEkZ/qiE28TQj+RV9UT74=
+github.com/arduino/pluggable-discovery-protocol-handler v1.1.0 h1:/fYOQ9f6beV9+mv9rDs+kvkhNKJ1edIT0RvIRj5Jj4U=
+github.com/arduino/pluggable-discovery-protocol-handler v1.1.0/go.mod h1:vQfYGJnunfcscLoUcZKqJBlEkZ/qiE28TQj+RV9UT74=
 github.com/creack/goselect v0.1.2 h1:2DNy14+JPjRBgPzAd1thbQp4BSIihxcBf0IXhQXDRa0=
 github.com/creack/goselect v0.1.2/go.mod h1:a/NhLweNvqIYMuxcMOuWY516Cimucms3DglDzQP3hKY=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

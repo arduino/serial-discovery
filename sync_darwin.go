@@ -18,13 +18,14 @@
 package main
 
 import (
+	"fmt"
 	"syscall"
 
 	discovery "github.com/arduino/pluggable-discovery-protocol-handler"
 	"go.bug.st/serial/enumerator"
 )
 
-func startSync(eventCB discovery.EventCallback) (chan<- bool, error) {
+func startSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (chan<- bool, error) {
 	// create kqueue
 	kq, err := syscall.Kqueue()
 	if err != nil {
@@ -96,22 +97,22 @@ func startSync(eventCB discovery.EventCallback) (chan<- bool, error) {
 				continue
 			}
 			if err != nil {
-				// output(&genericMessageJSON{
-				// 	EventType: "start_sync",
-				// 	Error:     true,
-				// 	Message:   fmt.Sprintf("error decoding START_SYNC event: %s", err),
-				// })
-				// TODO: how to handle errors? should we just retry silently?
+				errorCB(fmt.Sprintf("Error decoding serial event: %s", err))
+				break
 			}
 			if n <= 0 {
 				continue
 			}
 
 			// if there is an event retry up to 5 times
+			var enumeratorErr error
 			for retries := 0; retries < 5; retries++ {
 				retries--
-				updates, _ := enumerator.GetDetailedPortsList()
-
+				updates, err := enumerator.GetDetailedPortsList()
+				if err != nil {
+					enumeratorErr = err
+					break
+				}
 				for _, port := range current {
 					if !portListHas(updates, port) {
 						eventCB("remove", &discovery.Port{
@@ -128,6 +129,10 @@ func startSync(eventCB discovery.EventCallback) (chan<- bool, error) {
 				}
 
 				current = updates
+			}
+			if enumeratorErr != nil {
+				errorCB(fmt.Sprintf("Error enumerating serial ports: %s", enumeratorErr))
+				break
 			}
 		}
 
