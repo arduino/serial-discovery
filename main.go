@@ -42,21 +42,26 @@ func main() {
 	}
 }
 
+// SerialDiscovery is the implementation of the serial ports pluggable-discovery
 type SerialDiscovery struct {
 	closeChan chan<- bool
 }
 
+// Hello is the handler for the pluggable-discovery HELLO command
 func (d *SerialDiscovery) Hello(userAgent string, protocolVersion int) error {
 	return nil
 }
 
+// Quit is the handler for the pluggable-discovery QUIT command
 func (d *SerialDiscovery) Quit() {
 }
 
+// Start is the handler for the pluggable-discovery START command
 func (d *SerialDiscovery) Start() error {
 	return nil
 }
 
+// Stop is the handler for the pluggable-discovery STOP command
 func (d *SerialDiscovery) Stop() error {
 	if d.closeChan != nil {
 		d.closeChan <- true
@@ -66,6 +71,7 @@ func (d *SerialDiscovery) Stop() error {
 	return nil
 }
 
+// List is the handler for the pluggable-discovery LIST command
 func (d *SerialDiscovery) List() ([]*discovery.Port, error) {
 	list, err := enumerator.GetDetailedPortsList()
 	if err != nil {
@@ -78,6 +84,7 @@ func (d *SerialDiscovery) List() ([]*discovery.Port, error) {
 	return ports, nil
 }
 
+// StartSync is the handler for the pluggable-discovery START_SYNC command
 func (d *SerialDiscovery) StartSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) error {
 	close, err := startSync(eventCB, errorCB)
 	if err != nil {
