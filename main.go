@@ -1,7 +1,7 @@
 //
 // This file is part of serial-discovery.
 //
-// Copyright 2021 ARDUINO SA (http://www.arduino.cc/)
+// Copyright 2018-2021 ARDUINO SA (http://www.arduino.cc/)
 //
 // This software is released under the GNU General Public License version 3,
 // which covers the main part of arduino-cli.
@@ -18,16 +18,11 @@
 package main
 
 import (
-	"bufio"
-	"encoding/json"
 	"fmt"
 	"os"
-	"regexp"
-	"strconv"
-	"strings"
-	"sync"
 
 	"github.com/arduino/go-properties-orderedmap"
+	discovery "github.com/arduino/pluggable-discovery-protocol-handler"
 	"github.com/arduino/serial-discovery/version"
 	"go.bug.st/serial/enumerator"
 )
@@ -39,179 +34,81 @@ func main() {
 		return
 	}
 
-	syncStarted := false
-	var syncCloseChan chan<- bool
-
-	reader := bufio.NewReader(os.Stdin)
-	for {
-		fullCmd, err := reader.ReadString('\n')
-		if err != nil {
-			output(&genericMessageJSON{
-				EventType: "command_error",
-				Error:     true,
-				Message:   err.Error(),
-			})
-			os.Exit(1)
-		}
-		split := strings.Split(fullCmd, " ")
-		cmd := strings.ToUpper(strings.TrimSpace(split[0]))
-		switch cmd {
-		case "HELLO":
-			re := regexp.MustCompile(`(\d+) "([^"]+)"`)
-			matches := re.FindStringSubmatch(fullCmd[6:])
-			if len(matches) != 3 {
-				output(&genericMessageJSON{
-					EventType: "hello",
-					Error:     true,
-					Message:   "Invalid HELLO command",
-				})
-				continue
-			}
-			_ /* userAgent */ = matches[2]
-			_ /* reqProtocolVersion */, err := strconv.ParseUint(matches[1], 10, 64)
-			if err != nil {
-				output(&genericMessageJSON{
-					EventType: "hello",
-					Error:     true,
-					Message:   "Invalid protocol version: " + matches[2],
-				})
-				continue
-			}
-			output(&helloMessageJSON{
-				EventType:       "hello",
-				ProtocolVersion: 1, // Protocol version 1 is the only supported for now...
-				Message:         "OK",
-			})
-		case "START":
-			output(&genericMessageJSON{
-				EventType: "start",
-				Message:   "OK",
-			})
-		case "STOP":
-			if syncStarted {
-				syncCloseChan <- true
-				syncStarted = false
-			}
-			output(&genericMessageJSON{
-				EventType: "stop",
-				Message:   "OK",
-			})
-		case "LIST":
-			outputList()
-		case "QUIT":
-			output(&genericMessageJSON{
-				EventType: "quit",
-				Message:   "OK",
-			})
-			os.Exit(0)
-		case "START_SYNC":
-			if syncStarted {
-				// sync already started, just acknowledge again...
-				output(&genericMessageJSON{
-					EventType: "start_sync",
-					Message:   "OK",
-				})
-			} else if close, err := startSync(); err != nil {
-				output(&genericMessageJSON{
-					EventType: "start_sync",
-					Error:     true,
-					Message:   err.Error(),
-				})
-			} else {
-				syncCloseChan = close
-				syncStarted = true
-			}
-		default:
-			output(&genericMessageJSON{
-				EventType: "command_error",
-				Error:     true,
-				Message:   fmt.Sprintf("Command %s not supported", cmd),
-			})
-		}
+	serialDisc := &SerialDiscovery{}
+	disc := discovery.NewDiscoveryServer(serialDisc)
+	if err := disc.Run(os.Stdin, os.Stdout); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
+		os.Exit(1)
 	}
 }
 
-type boardPortJSON struct {
-	Address       string          `json:"address"`
-	Label         string          `json:"label,omitempty"`
-	Protocol      string          `json:"protocol,omitempty"`
-	ProtocolLabel string          `json:"protocolLabel,omitempty"`
-	Properties    *properties.Map `json:"properties,omitempty"`
+// SerialDiscovery is the implementation of the serial ports pluggable-discovery
+type SerialDiscovery struct {
+	closeChan chan<- bool
 }
 
-type listOutputJSON struct {
-	EventType string           `json:"eventType"`
-	Ports     []*boardPortJSON `json:"ports"`
+// Hello is the handler for the pluggable-discovery HELLO command
+func (d *SerialDiscovery) Hello(userAgent string, protocolVersion int) error {
+	return nil
 }
 
-func outputList() {
+// Quit is the handler for the pluggable-discovery QUIT command
+func (d *SerialDiscovery) Quit() {
+}
+
+// Start is the handler for the pluggable-discovery START command
+func (d *SerialDiscovery) Start() error {
+	return nil
+}
+
+// Stop is the handler for the pluggable-discovery STOP command
+func (d *SerialDiscovery) Stop() error {
+	if d.closeChan != nil {
+		d.closeChan <- true
+		close(d.closeChan)
+		d.closeChan = nil
+	}
+	return nil
+}
+
+// List is the handler for the pluggable-discovery LIST command
+func (d *SerialDiscovery) List() ([]*discovery.Port, error) {
 	list, err := enumerator.GetDetailedPortsList()
 	if err != nil {
-		output(&genericMessageJSON{
-			EventType: "list",
-			Error:     true,
-			Message:   err.Error(),
-		})
-		return
+		return nil, err
 	}
-	portsJSON := []*boardPortJSON{}
-	for _, port := range list {
-		portJSON := newBoardPortJSON(port)
-		portsJSON = append(portsJSON, portJSON)
+	ports := make([]*discovery.Port, len(list))
+	for i, port := range list {
+		ports[i] = toDiscoveryPort(port)
 	}
-	output(&listOutputJSON{
-		EventType: "list",
-		Ports:     portsJSON,
-	})
+	return ports, nil
 }
 
-func newBoardPortJSON(port *enumerator.PortDetails) *boardPortJSON {
-	prefs := properties.NewMap()
-	portJSON := &boardPortJSON{
-		Address:       port.Name,
-		Label:         port.Name,
-		Protocol:      "serial",
-		ProtocolLabel: "Serial Port",
-		Properties:    prefs,
-	}
-	if port.IsUSB {
-		portJSON.ProtocolLabel = "Serial Port (USB)"
-		portJSON.Properties.Set("vid", "0x"+port.VID)
-		portJSON.Properties.Set("pid", "0x"+port.PID)
-		portJSON.Properties.Set("serialNumber", port.SerialNumber)
-	}
-	return portJSON
-}
-
-type helloMessageJSON struct {
-	EventType       string `json:"eventType"`
-	ProtocolVersion int    `json:"protocolVersion"`
-	Message         string `json:"message"`
-}
-
-type genericMessageJSON struct {
-	EventType string `json:"eventType"`
-	Error     bool   `json:"error,omitempty"`
-	Message   string `json:"message"`
-}
-
-func output(msg interface{}) {
-	d, err := json.MarshalIndent(msg, "", "  ")
+// StartSync is the handler for the pluggable-discovery START_SYNC command
+func (d *SerialDiscovery) StartSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) error {
+	close, err := startSync(eventCB, errorCB)
 	if err != nil {
-		output(&genericMessageJSON{
-			EventType: "command_error",
-			Error:     true,
-			Message:   err.Error(),
-		})
-	} else {
-		syncronizedPrintLn(string(d))
+		return err
 	}
+	d.closeChan = close
+	return nil
 }
 
-var stdoutMutext sync.Mutex
-
-func syncronizedPrintLn(a ...interface{}) {
-	stdoutMutext.Lock()
-	fmt.Println(a...)
-	stdoutMutext.Unlock()
+func toDiscoveryPort(port *enumerator.PortDetails) *discovery.Port {
+	protocolLabel := "Serial Port"
+	props := properties.NewMap()
+	if port.IsUSB {
+		protocolLabel += " (USB)"
+		props.Set("vid", "0x"+port.VID)
+		props.Set("pid", "0x"+port.PID)
+		props.Set("serialNumber", port.SerialNumber)
+	}
+	res := &discovery.Port{
+		Address:       port.Name,
+		AddressLabel:  port.Name,
+		Protocol:      "serial",
+		ProtocolLabel: protocolLabel,
+		Properties:    props,
+	}
+	return res
 }

@@ -1,7 +1,7 @@
 //
 // This file is part of serial-discovery.
 //
-// Copyright 2018 ARDUINO SA (http://www.arduino.cc/)
+// Copyright 2018-2021 ARDUINO SA (http://www.arduino.cc/)
 //
 // This software is released under the GNU General Public License version 3,
 // which covers the main part of arduino-cli.
@@ -21,10 +21,11 @@ import (
 	"fmt"
 	"syscall"
 
+	discovery "github.com/arduino/pluggable-discovery-protocol-handler"
 	"go.bug.st/serial/enumerator"
 )
 
-func startSync() (chan<- bool, error) {
+func startSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (chan<- bool, error) {
 	// create kqueue
 	kq, err := syscall.Kqueue()
 	if err != nil {
@@ -47,104 +48,63 @@ func startSync() (chan<- bool, error) {
 		Udata:  nil,
 	}
 
-	// Ouput initial port state: get the current port list to send as initial "add" events
-	current, err := enumerator.GetDetailedPortsList()
-	if err != nil {
-		return nil, err
-	}
-	output(&genericMessageJSON{
-		EventType: "start_sync",
-		Message:   "OK",
-	})
-	for _, port := range current {
-		output(&syncOutputJSON{
-			EventType: "add",
-			Port:      newBoardPortJSON(port),
-		})
-	}
-
-	// Helper function to avoid decoging kqueue event messages
-	portListHas := func(list []*enumerator.PortDetails, port *enumerator.PortDetails) bool {
-		for _, p := range list {
-			if port.Name == p.Name && port.IsUSB == p.IsUSB {
-				if p.IsUSB &&
-					port.VID == p.VID &&
-					port.PID == p.PID &&
-					port.SerialNumber == p.SerialNumber {
-					return true
-				}
-				if !p.IsUSB {
-					return true
-				}
-			}
-		}
-		return false
-	}
-
 	// Run synchronous event emitter
 	closeChan := make(chan bool)
 
 	go func() {
+		defer syscall.Close(fd)
+		defer syscall.Close(kq)
+
+		// Ouput initial port state: get the current port list to send as initial "add" events
+		current, err := enumerator.GetDetailedPortsList()
+		if err != nil {
+			// TODO: how to handle errors? should we just retry silently?
+		}
+		for _, port := range current {
+			eventCB("add", toDiscoveryPort(port))
+		}
+
 		// wait for events
 		events := make([]syscall.Kevent_t, 10)
-		retries := 0
 
 		for {
-			for {
-				t100ms := syscall.Timespec{Nsec: 100000000, Sec: 0}
-				n, err := syscall.Kevent(kq, []syscall.Kevent_t{ev1}, events, &t100ms)
-				select {
-				case <-closeChan:
-					syscall.Close(kq)
-					syscall.Close(fd)
-					return
-				default:
-				}
-				if err == syscall.EINTR {
-					continue
-				}
-				if err != nil {
-					output(&genericMessageJSON{
-						EventType: "start_sync",
-						Error:     true,
-						Message:   fmt.Sprintf("error decoding START_SYNC event: %s", err),
-					})
-				}
-				// if there is an event retry up to 5 times
-				if n > 0 {
-					retries = 5
-				}
+			t100ms := syscall.Timespec{Nsec: 100000000, Sec: 0}
+			n, err := syscall.Kevent(kq, []syscall.Kevent_t{ev1}, events, &t100ms)
+			select {
+			case <-closeChan:
+				return
+			default:
+			}
+			if err == syscall.EINTR {
+				continue
+			}
+			if err != nil {
+				errorCB(fmt.Sprintf("Error decoding serial event: %s", err))
 				break
 			}
+			if n <= 0 {
+				continue
+			}
 
-			for retries > 0 {
+			// if there is an event retry up to 5 times
+			var enumeratorErr error
+			for retries := 0; retries < 5; retries++ {
 				retries--
-				updates, _ := enumerator.GetDetailedPortsList()
-
-				for _, port := range current {
-					if !portListHas(updates, port) {
-						output(&syncOutputJSON{
-							EventType: "remove",
-							Port: &boardPortJSON{
-								Address:  port.Name,
-								Protocol: "serial",
-							},
-						})
-					}
+				updates, err := enumerator.GetDetailedPortsList()
+				if err != nil {
+					enumeratorErr = err
+					break
 				}
-
-				for _, port := range updates {
-					if !portListHas(current, port) {
-						output(&syncOutputJSON{
-							EventType: "add",
-							Port:      newBoardPortJSON(port),
-						})
-					}
-				}
-
+				ProcessUpdates(current, updates, eventCB)
 				current = updates
 			}
+			if enumeratorErr != nil {
+				errorCB(fmt.Sprintf("Error enumerating serial ports: %s", enumeratorErr))
+				break
+			}
 		}
+
+		<-closeChan
 	}()
 
 	return closeChan, nil

@@ -1,7 +1,7 @@
 //
 // This file is part of serial-discovery.
 //
-// Copyright 2018 ARDUINO SA (http://www.arduino.cc/)
+// Copyright 2018-2021 ARDUINO SA (http://www.arduino.cc/)
 //
 // This software is released under the GNU General Public License version 3,
 // which covers the main part of arduino-cli.
@@ -20,11 +20,12 @@ package main
 import (
 	"fmt"
 
+	discovery "github.com/arduino/pluggable-discovery-protocol-handler"
 	"github.com/s-urbaniak/uevent"
 	"go.bug.st/serial/enumerator"
 )
 
-func startSync() (chan<- bool, error) {
+func startSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (chan<- bool, error) {
 	// Get the current port list to send as initial "add" events
 	current, err := enumerator.GetDetailedPortsList()
 	if err != nil {
@@ -43,19 +44,6 @@ func startSync() (chan<- bool, error) {
 		syncReader.Close()
 	}()
 
-	output(&genericMessageJSON{
-		EventType: "start_sync",
-		Message:   "OK",
-	})
-
-	// Ouput initial port state
-	for _, port := range current {
-		output(&syncOutputJSON{
-			EventType: "add",
-			Port:      newBoardPortJSON(port),
-		})
-	}
-
 	// Run synchronous event emitter
 	go func() {
 		defer func() {
@@ -63,17 +51,17 @@ func startSync() (chan<- bool, error) {
 			// This recovers from "bufio: reader returned negative count from Read" panic
 			// when the underlying stream is closed
 		}()
+
+		// Ouput initial port state
+		for _, port := range current {
+			eventCB("add", toDiscoveryPort(port))
+		}
+
 		dec := uevent.NewDecoder(syncReader)
 		for {
 			evt, err := dec.Decode()
 			if err != nil {
-				output(&genericMessageJSON{
-					EventType: "start_sync",
-					Error:     true,
-					Message:   fmt.Sprintf("error decoding START_SYNC event: %s", err),
-				})
-
-				// TODO: output "stop" msg? close?
+				errorCB(fmt.Sprintf("Error decoding serial event: %s", err))
 				return
 			}
 			if evt.Subsystem != "tty" {
@@ -87,21 +75,15 @@ func startSync() (chan<- bool, error) {
 				}
 				for _, port := range portList {
 					if port.IsUSB && port.Name == changedPort {
-						output(&syncOutputJSON{
-							EventType: "add",
-							Port:      newBoardPortJSON(port),
-						})
+						eventCB("add", toDiscoveryPort(port))
 						break
 					}
 				}
 			}
 			if evt.Action == "remove" {
-				output(&syncOutputJSON{
-					EventType: "remove",
-					Port: &boardPortJSON{
-						Address:  changedPort,
-						Protocol: "serial",
-					},
+				eventCB("remove", &discovery.Port{
+					Address:  changedPort,
+					Protocol: "serial",
 				})
 			}
 		}

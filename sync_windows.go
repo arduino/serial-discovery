@@ -1,7 +1,7 @@
 //
 // This file is part of serial-discovery.
 //
-// Copyright 2018 ARDUINO SA (http://www.arduino.cc/)
+// Copyright 2018-2021 ARDUINO SA (http://www.arduino.cc/)
 //
 // This software is released under the GNU General Public License version 3,
 // which covers the main part of arduino-cli.
@@ -24,6 +24,7 @@ import (
 	"time"
 	"unsafe"
 
+	discovery "github.com/arduino/pluggable-discovery-protocol-handler"
 	"go.bug.st/serial/enumerator"
 )
 
@@ -101,7 +102,7 @@ func init() {
 	runtime.LockOSThread()
 }
 
-func startSync() (chan<- bool, error) {
+func startSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (chan<- bool, error) {
 	startResult := make(chan error)
 	event := make(chan bool, 1)
 	go func() {
@@ -113,19 +114,11 @@ func startSync() (chan<- bool, error) {
 	go func() {
 		current, err := enumerator.GetDetailedPortsList()
 		if err != nil {
-			// TODO: handle err? stop sync mode?
-			fmt.Println(err)
+			errorCB(fmt.Sprintf("Error enumarating serial ports: %s", err))
 			return
 		}
-		output(&genericMessageJSON{
-			EventType: "start_sync",
-			Message:   "OK",
-		})
 		for _, port := range current {
-			output(&syncOutputJSON{
-				EventType: "add",
-				Port:      newBoardPortJSON(port),
-			})
+			eventCB("add", toDiscoveryPort(port))
 		}
 
 		for {
@@ -141,57 +134,20 @@ func startSync() (chan<- bool, error) {
 			}
 
 			// Send updates
-
 			updates, err := enumerator.GetDetailedPortsList()
 			if err != nil {
-				// TODO: handle err? stop sync mode?
-				fmt.Println(err)
-				continue
+				errorCB(fmt.Sprintf("Error enumarating serial ports: %s", err))
+				return
 			}
-
-			portListHas := func(list []*enumerator.PortDetails, port *enumerator.PortDetails) bool {
-				for _, p := range list {
-					if port.Name == p.Name && port.IsUSB == p.IsUSB {
-						if p.IsUSB &&
-							port.VID == p.VID &&
-							port.PID == p.PID &&
-							port.SerialNumber == p.SerialNumber {
-							return true
-						}
-						if !p.IsUSB {
-							return true
-						}
-					}
-				}
-				return false
-			}
-
-			for _, port := range current {
-				if !portListHas(updates, port) {
-					output(&syncOutputJSON{
-						EventType: "remove",
-						Port: &boardPortJSON{
-							Address:  port.Name,
-							Protocol: "serial",
-						},
-					})
-				}
-			}
-
-			for _, port := range updates {
-				if !portListHas(current, port) {
-					output(&syncOutputJSON{
-						EventType: "add",
-						Port:      newBoardPortJSON(port),
-					})
-				}
-			}
-
+			ProcessUpdates(current, updates, eventCB)
 			current = updates
 		}
 	}()
 	quit := make(chan bool)
-	// TODO: implement termination channel
+	go func() {
+		<-quit
+		// TODO: implement termination channel
+	}()
 	return quit, nil
 }
 
@@ -247,7 +203,8 @@ func initAndRunWindowHandler(startResult chan<- error, event chan<- bool) {
 	for {
 		if res, err := getMessage(&m, hwnd, 0, 0); res == 0 || res == -1 {
 			if err != nil {
-				fmt.Println(err)
+				// TODO: send err and stop sync mode.
+				// fmt.Println(err)
 			}
 			break
 		}
