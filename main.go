@@ -56,11 +56,6 @@ func (d *SerialDiscovery) Hello(userAgent string, protocolVersion int) error {
 func (d *SerialDiscovery) Quit() {
 }
 
-// Start is the handler for the pluggable-discovery START command
-func (d *SerialDiscovery) Start() error {
-	return nil
-}
-
 // Stop is the handler for the pluggable-discovery STOP command
 func (d *SerialDiscovery) Stop() error {
 	if d.closeChan != nil {
@@ -69,19 +64,6 @@ func (d *SerialDiscovery) Stop() error {
 		d.closeChan = nil
 	}
 	return nil
-}
-
-// List is the handler for the pluggable-discovery LIST command
-func (d *SerialDiscovery) List() ([]*discovery.Port, error) {
-	list, err := enumerator.GetDetailedPortsList()
-	if err != nil {
-		return nil, err
-	}
-	ports := make([]*discovery.Port, len(list))
-	for i, port := range list {
-		ports[i] = toDiscoveryPort(port)
-	}
-	return ports, nil
 }
 
 // StartSync is the handler for the pluggable-discovery START_SYNC command
