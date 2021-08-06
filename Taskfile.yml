@@ -63,3 +63,9 @@ tasks:
     desc: Format Go code
     cmds:
       - go fmt {{default .DEFAULT_GO_PACKAGES .GO_PACKAGES}}
+
+  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-prettier-formatting-task/Taskfile.yml
+  general:format-prettier:
+    desc: Format all supported files with Prettier
+    cmds:
+      - npx prettier --write .
