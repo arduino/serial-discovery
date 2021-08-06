@@ -12,11 +12,12 @@ vars:
     sh: echo "$(git describe --tags --dirty --broken)"
   TIMESTAMP:
     sh: echo "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+  CONFIGURATION_PACKAGE: github.com/arduino/serial-discovery/version
   LDFLAGS: >
     -ldflags
     '
-    -X github.com/arduino/serial-discovery/version.Tag={{.VERSION}}
-    -X github.com/arduino/serial-discovery/version.Timestamp={{.TIMESTAMP}}
+    -X {{.CONFIGURATION_PACKAGE}}.Tag={{.VERSION}}
+    -X {{.CONFIGURATION_PACKAGE}}.Timestamp={{.TIMESTAMP}}
     '
 
 tasks:
