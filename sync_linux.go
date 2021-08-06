@@ -52,7 +52,7 @@ func startSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback)
 			// when the underlying stream is closed
 		}()
 
-		// Ouput initial port state
+		// Output initial port state
 		for _, port := range current {
 			eventCB("add", toDiscoveryPort(port))
 		}

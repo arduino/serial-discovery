@@ -55,7 +55,7 @@ func startSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback)
 		defer syscall.Close(fd)
 		defer syscall.Close(kq)
 
-		// Ouput initial port state: get the current port list to send as initial "add" events
+		// Output initial port state: get the current port list to send as initial "add" events
 		current, err := enumerator.GetDetailedPortsList()
 		if err != nil {
 			// TODO: how to handle errors? should we just retry silently?
