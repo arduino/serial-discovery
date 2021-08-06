@@ -70,6 +70,12 @@ tasks:
     cmds:
       - npx prettier --write .
 
+  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/poetry-task/Taskfile.yml
+  poetry:install-deps:
+    desc: Install dependencies managed by Poetry
+    cmds:
+      - poetry install --no-root
+
   docs:generate:
     desc: Create all generated documentation content
     # This is an "umbrella" task used to call any documentation generation processes the project has.
@@ -155,3 +161,11 @@ tasks:
             -c ajv-formats \
             -s "{{.WORKFLOW_SCHEMA_PATH}}" \
             -d "{{.WORKFLOWS_DATA_PATH}}"
+
+  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-yaml-task/Taskfile.yml
+  yaml:lint:
+    desc: Check for problems with YAML files
+    deps:
+      - task: poetry:install-deps
+    cmds:
+      - poetry run yamllint --format {{default "colored" .YAMLLINT_FORMAT}} .
