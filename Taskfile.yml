@@ -76,6 +76,12 @@ tasks:
     cmds:
       - poetry install --no-root
 
+  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/poetry-task/Taskfile.yml
+  poetry:update-deps:
+    desc: Update all dependencies managed by Poetry to their newest versions
+    cmds:
+      - poetry update
+
   docs:generate:
     desc: Create all generated documentation content
     # This is an "umbrella" task used to call any documentation generation processes the project has.
@@ -169,3 +175,19 @@ tasks:
       - task: poetry:install-deps
     cmds:
       - poetry run yamllint --format {{default "colored" .YAMLLINT_FORMAT}} .
+
+  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/spell-check-task/Taskfile.yml
+  general:check-spelling:
+    desc: Check for commonly misspelled words
+    deps:
+      - task: poetry:install-deps
+    cmds:
+      - poetry run codespell
+
+  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/spell-check-task/Taskfile.yml
+  general:correct-spelling:
+    desc: Correct commonly misspelled words where possible
+    deps:
+      - task: poetry:install-deps
+    cmds:
+      - poetry run codespell --write-changes
