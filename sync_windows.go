@@ -114,7 +114,7 @@ func startSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback)
 	go func() {
 		current, err := enumerator.GetDetailedPortsList()
 		if err != nil {
-			errorCB(fmt.Sprintf("Error enumarating serial ports: %s", err))
+			errorCB(fmt.Sprintf("Error enumerating serial ports: %s", err))
 			return
 		}
 		for _, port := range current {
@@ -136,7 +136,7 @@ func startSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback)
 			// Send updates
 			updates, err := enumerator.GetDetailedPortsList()
 			if err != nil {
-				errorCB(fmt.Sprintf("Error enumarating serial ports: %s", err))
+				errorCB(fmt.Sprintf("Error enumerating serial ports: %s", err))
 				return
 			}
 			ProcessUpdates(current, updates, eventCB)

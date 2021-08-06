@@ -4,7 +4,7 @@ The `serial-discovery` tool is a command line program that interacts via stdio. 
 
 ## How to build
 
-Install a recent go enviroment (>=13.0) and run `go build`. The executable `serial-discovery` will be produced in your working directory.
+Install a recent go environment (>=13.0) and run `go build`. The executable `serial-discovery` will be produced in your working directory.
 
 ## Usage
 
@@ -98,7 +98,7 @@ The `LIST` command returns a list of the currently available serial ports. The f
 
 The `ports` field contains a list of the available serial ports. If the serial port comes from an USB serial converter the USB VID/PID and USB SERIAL NUMBER properties are also reported inside `properties`.
 
-The list command is a one-shot command, if you need continuos monitoring of ports you should use `START_SYNC` command.
+The list command is a one-shot command, if you need continuous monitoring of ports you should use `START_SYNC` command.
 
 #### START_SYNC command
 
