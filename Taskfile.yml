@@ -3,13 +3,9 @@ version: "3"
 includes:
   dist: ./DistTasks.yml
 
-tasks:
-  build:
-    desc: Build the project
-    cmds:
-      - go build -v {{.LDFLAGS}}
-
 vars:
+  DEFAULT_GO_PACKAGES:
+    sh: echo $(go list ./... | tr '\n' ' ')
   PROJECT_NAME: "serial-discovery"
   DIST_DIR: "dist"
   VERSION:
@@ -22,3 +18,48 @@ vars:
     -X github.com/arduino/serial-discovery/version.Tag={{.VERSION}}
     -X github.com/arduino/serial-discovery/version.Timestamp={{.TIMESTAMP}}
     '
+
+tasks:
+  build:
+    desc: Build the project
+    cmds:
+      - go build -v {{.LDFLAGS}}
+
+  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-go-task/Taskfile.yml
+  go:check:
+    desc: Check for problems with Go code
+    deps:
+      - task: go:vet
+      - task: go:lint
+
+  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-go-task/Taskfile.yml
+  go:vet:
+    desc: Check for errors in Go code
+    cmds:
+      - go vet {{default .DEFAULT_GO_PACKAGES .GO_PACKAGES}}
+
+  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-go-task/Taskfile.yml
+  go:fix:
+    desc: Modernize usages of outdated APIs
+    cmds:
+      - go fix {{default .DEFAULT_GO_PACKAGES .GO_PACKAGES}}
+
+  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-go-task/Taskfile.yml
+  go:lint:
+    desc: Lint Go code
+    cmds:
+      - |
+        if ! which golint &>/dev/null; then
+          echo "golint not installed or not in PATH. Please install: https://github.com/golang/lint#installation"
+          exit 1
+        fi
+      - |
+        golint \
+          {{default "-min_confidence 0.8 -set_exit_status" .GO_LINT_FLAGS}} \
+          {{default .DEFAULT_GO_PACKAGES .GO_PACKAGES}}
+
+  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-go-task/Taskfile.yml
+  go:format:
+    desc: Format Go code
+    cmds:
+      - go fmt {{default .DEFAULT_GO_PACKAGES .GO_PACKAGES}}
