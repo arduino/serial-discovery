@@ -15,7 +15,7 @@
 // a commercial license, send an email to license@arduino.cc.
 //
 
-package main
+package sync
 
 import (
 	"fmt"
@@ -102,7 +102,10 @@ func init() {
 	runtime.LockOSThread()
 }
 
-func startSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (chan<- bool, error) {
+// Start the sync process, successful events will be passed to eventCB, errors to errorCB.
+// Returns a channel used to stop the sync process.
+// Returns error if sync process can't be started.
+func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (chan<- bool, error) {
 	startResult := make(chan error)
 	event := make(chan bool, 1)
 	go func() {
@@ -139,7 +142,7 @@ func startSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback)
 				errorCB(fmt.Sprintf("Error enumerating serial ports: %s", err))
 				return
 			}
-			ProcessUpdates(current, updates, eventCB)
+			processUpdates(current, updates, eventCB)
 			current = updates
 		}
 	}()

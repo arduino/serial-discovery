@@ -15,20 +15,21 @@
 // a commercial license, send an email to license@arduino.cc.
 //
 
-package main
+package sync
 
 import (
+	"github.com/arduino/go-properties-orderedmap"
 	discovery "github.com/arduino/pluggable-discovery-protocol-handler/v2"
 	"go.bug.st/serial/enumerator"
 )
 
-// ProcessUpdates sends 'add' and 'remove' events by comparing two ports enumeration
+// processUpdates sends 'add' and 'remove' events by comparing two ports enumeration
 // made at different times:
 // - ports present in the new list but not in the old list are reported as 'added'
 // - ports present in the old list but not in the new list are reported as 'removed'
-func ProcessUpdates(old, new []*enumerator.PortDetails, eventCB discovery.EventCallback) {
+func processUpdates(old, new []*enumerator.PortDetails, eventCB discovery.EventCallback) {
 	for _, oldPort := range old {
-		if !PortListHas(new, oldPort) {
+		if !portListHas(new, oldPort) {
 			eventCB("remove", &discovery.Port{
 				Address:  oldPort.Name,
 				Protocol: "serial",
@@ -37,15 +38,15 @@ func ProcessUpdates(old, new []*enumerator.PortDetails, eventCB discovery.EventC
 	}
 
 	for _, newPort := range new {
-		if !PortListHas(old, newPort) {
+		if !portListHas(old, newPort) {
 			eventCB("add", toDiscoveryPort(newPort))
 		}
 	}
 }
 
-// PortListHas checks if port is contained in list. The port metadata are
+// portListHas checks if port is contained in list. The port metadata are
 // compared in particular the port address, and vid/pid if the port is a usb port.
-func PortListHas(list []*enumerator.PortDetails, port *enumerator.PortDetails) bool {
+func portListHas(list []*enumerator.PortDetails, port *enumerator.PortDetails) bool {
 	for _, p := range list {
 		if port.Name == p.Name && port.IsUSB == p.IsUSB {
 			if p.IsUSB &&
@@ -60,4 +61,23 @@ func PortListHas(list []*enumerator.PortDetails, port *enumerator.PortDetails) b
 		}
 	}
 	return false
+}
+
+func toDiscoveryPort(port *enumerator.PortDetails) *discovery.Port {
+	protocolLabel := "Serial Port"
+	props := properties.NewMap()
+	if port.IsUSB {
+		protocolLabel += " (USB)"
+		props.Set("vid", "0x"+port.VID)
+		props.Set("pid", "0x"+port.PID)
+		props.Set("serialNumber", port.SerialNumber)
+	}
+	res := &discovery.Port{
+		Address:       port.Name,
+		AddressLabel:  port.Name,
+		Protocol:      "serial",
+		ProtocolLabel: protocolLabel,
+		Properties:    props,
+	}
+	return res
 }

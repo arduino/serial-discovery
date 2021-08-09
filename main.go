@@ -21,16 +21,16 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/arduino/go-properties-orderedmap"
 	discovery "github.com/arduino/pluggable-discovery-protocol-handler/v2"
+	"github.com/arduino/serial-discovery/args"
+	"github.com/arduino/serial-discovery/sync"
 	"github.com/arduino/serial-discovery/version"
-	"go.bug.st/serial/enumerator"
 )
 
 func main() {
-	parseArgs()
-	if args.showVersion {
-		fmt.Printf("serial-discovery %s (build timestamp: %s)\n", version.Tag, version.Timestamp)
+	args.Parse()
+	if args.ShowVersion {
+		fmt.Printf("%s\n", version.VersionInfo)
 		return
 	}
 
@@ -68,29 +68,10 @@ func (d *SerialDiscovery) Stop() error {
 
 // StartSync is the handler for the pluggable-discovery START_SYNC command
 func (d *SerialDiscovery) StartSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) error {
-	close, err := startSync(eventCB, errorCB)
+	close, err := sync.Start(eventCB, errorCB)
 	if err != nil {
 		return err
 	}
 	d.closeChan = close
 	return nil
-}
-
-func toDiscoveryPort(port *enumerator.PortDetails) *discovery.Port {
-	protocolLabel := "Serial Port"
-	props := properties.NewMap()
-	if port.IsUSB {
-		protocolLabel += " (USB)"
-		props.Set("vid", "0x"+port.VID)
-		props.Set("pid", "0x"+port.PID)
-		props.Set("serialNumber", port.SerialNumber)
-	}
-	res := &discovery.Port{
-		Address:       port.Name,
-		AddressLabel:  port.Name,
-		Protocol:      "serial",
-		ProtocolLabel: protocolLabel,
-		Properties:    props,
-	}
-	return res
 }

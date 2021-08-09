@@ -17,10 +17,11 @@
 
 // +build !linux,!windows,!darwin
 
-package main
+package sync
 
 import "fmt"
 
-func startSync() (chan<- bool, error) {
+// Start fallback implementation
+func Start() (chan<- bool, error) {
 	return nil, fmt.Errorf("Command START_SYNC not supported")
 }

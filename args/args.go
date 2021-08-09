@@ -15,24 +15,24 @@
 // a commercial license, send an email to license@arduino.cc.
 //
 
-package main
+package args
 
 import (
 	"fmt"
 	"os"
 )
 
-var args struct {
-	showVersion bool
-}
+// ShowVersion FIXMEDOC
+var ShowVersion bool
 
-func parseArgs() {
+// Parse arguments passed by the user
+func Parse() {
 	for _, arg := range os.Args[1:] {
 		if arg == "" {
 			continue
 		}
 		if arg == "-v" || arg == "--version" {
-			args.showVersion = true
+			ShowVersion = true
 			continue
 		}
 		fmt.Fprintf(os.Stderr, "invalid argument: %s\n", arg)
