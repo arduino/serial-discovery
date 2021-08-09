@@ -22,7 +22,8 @@ vars:
   LDFLAGS: >
     -ldflags
     '
-    -X {{.CONFIGURATION_PACKAGE}}.Tag={{.VERSION}}
+    -X {{.CONFIGURATION_PACKAGE}}.Version={{.VERSION}}
+    -X {{.CONFIGURATION_PACKAGE}}.Commit={{.COMMIT}}
     -X {{.CONFIGURATION_PACKAGE}}.Timestamp={{.TIMESTAMP}}
     '
 

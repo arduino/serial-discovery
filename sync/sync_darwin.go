@@ -15,7 +15,7 @@
 // a commercial license, send an email to license@arduino.cc.
 //
 
-package main
+package sync
 
 import (
 	"fmt"
@@ -25,7 +25,10 @@ import (
 	"go.bug.st/serial/enumerator"
 )
 
-func startSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (chan<- bool, error) {
+// Start the sync process, successful events will be passed to eventCB, errors to errorCB.
+// Returns a channel used to stop the sync process.
+// Returns error if sync process can't be started.
+func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (chan<- bool, error) {
 	// create kqueue
 	kq, err := syscall.Kqueue()
 	if err != nil {
@@ -95,7 +98,7 @@ func startSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback)
 					enumeratorErr = err
 					break
 				}
-				ProcessUpdates(current, updates, eventCB)
+				processUpdates(current, updates, eventCB)
 				current = updates
 			}
 			if enumeratorErr != nil {

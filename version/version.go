@@ -17,8 +17,50 @@
 
 package version
 
-// Tag is the current git tag
-var Tag = "snapshot"
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+)
 
-// Timestamp is the current timestamp
-var Timestamp = "unknown"
+// VersionInfo FIXMEDOC
+var VersionInfo = newInfo(filepath.Base(os.Args[0]))
+
+var (
+	defaultVersionString = "0.0.0-git"
+	// Version FIXMEDOC
+	Version = ""
+	// Commit FIXMEDOC
+	Commit = ""
+	// Timestamp FIXMEDOC
+	Timestamp = ""
+)
+
+// Info FIXMEDOC
+type Info struct {
+	Application   string `json:"Application"`
+	VersionString string `json:"VersionString"`
+	Commit        string `json:"Commit"`
+	Date          string `json:"Date"`
+}
+
+// NewInfo FIXMEDOC
+func newInfo(application string) *Info {
+	return &Info{
+		Application:   application,
+		VersionString: Version,
+		Commit:        Commit,
+		Date:          Timestamp,
+	}
+}
+
+func (i *Info) String() string {
+	return fmt.Sprintf("%s Version: %s Commit: %s Date: %s", i.Application, i.VersionString, i.Commit, i.Date)
+}
+
+//nolint:gochecknoinits
+func init() {
+	if Version == "" {
+		Version = defaultVersionString
+	}
+}
