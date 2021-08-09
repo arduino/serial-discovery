@@ -20,7 +20,7 @@ package main
 import (
 	"fmt"
 
-	discovery "github.com/arduino/pluggable-discovery-protocol-handler"
+	discovery "github.com/arduino/pluggable-discovery-protocol-handler/v2"
 	"github.com/s-urbaniak/uevent"
 	"go.bug.st/serial/enumerator"
 )

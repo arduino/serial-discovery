@@ -2,10 +2,10 @@ github.com/arduino/go-paths-helper v1.0.1/go.mod h1:HpxtKph+g238EJHq4geEPv9p+gl3
 github.com/arduino/go-paths-helper v1.6.1 h1:lha+/BuuBsx0qTZ3gy6IO1kU23lObWdQ/UItkzVWQ+0=
 github.com/arduino/go-paths-helper v1.6.1/go.mod h1:V82BWgAAp4IbmlybxQdk9Bpkz8M4Qyx+RAFKaG9NuvU=
 github.com/arduino/go-properties-orderedmap v1.4.0/go.mod h1:DKjD2VXY/NZmlingh4lSFMEYCVubfeArCsGPGDwb2yk=
-github.com/arduino/go-properties-orderedmap v1.5.0 h1:istmr13qQN3nneuU3lsqlMvI6jqB3u8QUfVU1tX/t/8=
-github.com/arduino/go-properties-orderedmap v1.5.0/go.mod h1:DKjD2VXY/NZmlingh4lSFMEYCVubfeArCsGPGDwb2yk=
-github.com/arduino/pluggable-discovery-protocol-handler v1.2.0 h1:gw6W8CtgGc+kh+DKfh+z6cUVPqaZh9Tu3XCt/uGgJUE=
-github.com/arduino/pluggable-discovery-protocol-handler v1.2.0/go.mod h1:vQfYGJnunfcscLoUcZKqJBlEkZ/qiE28TQj+RV9UT74=
+github.com/arduino/go-properties-orderedmap v1.6.0 h1:gp2JoWRETtqwsZ+UHu/PBuYWYH2x2+d+uipDxS4WmvM=
+github.com/arduino/go-properties-orderedmap v1.6.0/go.mod h1:DKjD2VXY/NZmlingh4lSFMEYCVubfeArCsGPGDwb2yk=
+github.com/arduino/pluggable-discovery-protocol-handler/v2 v2.0.1 h1:THeCPZWeGfnvtPvxAiCqgEdRhdfERgycHd35NPP9UMQ=
+github.com/arduino/pluggable-discovery-protocol-handler/v2 v2.0.1/go.mod h1:tQXPIAEHcc5k8HBsufLsWmju0D3WiJt07j+dFT55NGY=
 github.com/creack/goselect v0.1.2 h1:2DNy14+JPjRBgPzAd1thbQp4BSIihxcBf0IXhQXDRa0=
 github.com/creack/goselect v0.1.2/go.mod h1:a/NhLweNvqIYMuxcMOuWY516Cimucms3DglDzQP3hKY=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -24,8 +24,8 @@ github.com/stretchr/testify v1.4.0/go.mod h1:j7eGeouHqKxXV5pUuKE4zz7dFj8WfuZ+81P
 go.bug.st/serial v1.3.1 h1:ziLU+w7RzBZKMGacM/6iY6P7bhxsoyaoVLWcfAdt6w4=
 go.bug.st/serial v1.3.1/go.mod h1:8TT7u/SwwNIpJ8QaG4s+HTjFt9ReXs2cdOU7ZEk50Dk=
 golang.org/x/sys v0.0.0-20200909081042-eff7692f9009/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
-golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c h1:F1jZWGFhYfh0Ci55sIpILtKKK8p3i2/krTr0H1rg74I=
-golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
+golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069 h1:siQdpVirKtzPhKl3lZWozZraCFObP8S1v6PRp0bLrtU=
+golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
 gopkg.in/yaml.v2 v2.2.2 h1:ZCJp+EgiOT7lHqUV2J862kp8Qj64Jo6az82+3Td9dZw=
 gopkg.in/yaml.v2 v2.2.2/go.mod h1:hI93XBmqTisBFMUTm0b8Fm+jr3Dg1NNxqwp+5A1VGuI=
