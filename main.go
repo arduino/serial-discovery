@@ -22,7 +22,7 @@ import (
 	"os"
 
 	"github.com/arduino/go-properties-orderedmap"
-	discovery "github.com/arduino/pluggable-discovery-protocol-handler"
+	discovery "github.com/arduino/pluggable-discovery-protocol-handler/v2"
 	"github.com/arduino/serial-discovery/version"
 	"go.bug.st/serial/enumerator"
 )
@@ -35,7 +35,7 @@ func main() {
 	}
 
 	serialDisc := &SerialDiscovery{}
-	disc := discovery.NewDiscoveryServer(serialDisc)
+	disc := discovery.NewServer(serialDisc)
 	if err := disc.Run(os.Stdin, os.Stdout); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
 		os.Exit(1)

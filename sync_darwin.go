@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"syscall"
 
-	discovery "github.com/arduino/pluggable-discovery-protocol-handler"
+	discovery "github.com/arduino/pluggable-discovery-protocol-handler/v2"
 	"go.bug.st/serial/enumerator"
 )
 
