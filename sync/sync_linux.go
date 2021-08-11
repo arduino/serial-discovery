@@ -19,6 +19,7 @@ package sync
 
 import (
 	"fmt"
+	"io"
 
 	discovery "github.com/arduino/pluggable-discovery-protocol-handler/v2"
 	"github.com/s-urbaniak/uevent"
@@ -49,12 +50,6 @@ func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (ch
 
 	// Run synchronous event emitter
 	go func() {
-		defer func() {
-			recover()
-			// This recovers from "bufio: reader returned negative count from Read" panic
-			// when the underlying stream is closed
-		}()
-
 		// Output initial port state
 		for _, port := range current {
 			eventCB("add", toDiscoveryPort(port))
@@ -63,7 +58,11 @@ func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (ch
 		dec := uevent.NewDecoder(syncReader)
 		for {
 			evt, err := dec.Decode()
-			if err != nil {
+			if err == io.EOF {
+				// The underlying syncReader has been closed
+				// so there's nothing else to read
+				return
+			} else if err != nil {
 				errorCB(fmt.Sprintf("Error decoding serial event: %s", err))
 				return
 			}
