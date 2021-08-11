@@ -5,7 +5,7 @@ require (
 	github.com/arduino/go-properties-orderedmap v1.6.0
 	github.com/arduino/pluggable-discovery-protocol-handler/v2 v2.0.1
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/s-urbaniak/uevent v1.0.0
+	github.com/s-urbaniak/uevent v1.0.1
 	go.bug.st/serial v1.3.1
 	golang.org/x/sys v0.0.0-20210806184541-e5e7981a1069
 )
