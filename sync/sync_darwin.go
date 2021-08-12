@@ -61,7 +61,8 @@ func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (ch
 		// Output initial port state: get the current port list to send as initial "add" events
 		current, err := enumerator.GetDetailedPortsList()
 		if err != nil {
-			// TODO: how to handle errors? should we just retry silently?
+			errorCB(err.Error())
+			return
 		}
 		for _, port := range current {
 			eventCB("add", toDiscoveryPort(port))
@@ -71,7 +72,7 @@ func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (ch
 		events := make([]syscall.Kevent_t, 10)
 
 		for {
-			t100ms := syscall.Timespec{Nsec: 100000000, Sec: 0}
+			t100ms := syscall.Timespec{Nsec: 100_000_000, Sec: 0}
 			n, err := syscall.Kevent(kq, []syscall.Kevent_t{ev1}, events, &t100ms)
 			select {
 			case <-closeChan:
@@ -92,7 +93,6 @@ func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (ch
 			// if there is an event retry up to 5 times
 			var enumeratorErr error
 			for retries := 0; retries < 5; retries++ {
-				retries--
 				updates, err := enumerator.GetDetailedPortsList()
 				if err != nil {
 					enumeratorErr = err
