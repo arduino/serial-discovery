@@ -1,5 +1,6 @@
 # Build artifacts
-serial-discovery
+/serial-discovery
+!/serial-discovery/
 serial-discovery.exe
 __pycache__/
 
