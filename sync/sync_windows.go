@@ -18,10 +18,10 @@
 package sync
 
 import (
+	"context"
 	"fmt"
 	"runtime"
 	"syscall"
-	"time"
 	"unsafe"
 
 	discovery "github.com/arduino/pluggable-discovery-protocol-handler/v2"
@@ -32,11 +32,13 @@ import (
 
 //sys getModuleHandle(moduleName *byte) (handle syscall.Handle, err error) = GetModuleHandleA
 //sys registerClass(wndClass *wndClass) (atom uint16, err error) = user32.RegisterClassA
+//sys unregisterClass(className *byte) (err error) = user32.UnregisterClassA
 //sys defWindowProc(hwnd syscall.Handle, msg uint32, wParam uintptr, lParam uintptr) (lResult uintptr) = user32.DefWindowProcW
 //sys createWindowEx(exstyle uint32, className *byte, windowText *byte, style uint32, x int32, y int32, width int32, height int32, parent syscall.Handle, menu syscall.Handle, hInstance syscall.Handle, lpParam uintptr) (hwnd syscall.Handle, err error) = user32.CreateWindowExA
+//sys destroyWindowEx(hwnd syscall.Handle) (err error) = user32.DestroyWindow
 //sys registerDeviceNotification(recipient syscall.Handle, filter *devBroadcastDeviceInterface, flags uint32) (devHandle syscall.Handle, err error) = user32.RegisterDeviceNotificationA
-//sys getMessage(msg *msg, hwnd syscall.Handle, msgFilterMin uint32, msgFilterMax uint32) (res int32, err error) = user32.GetMessageA
-//sys translateMessage(msg *msg) (res bool) = user32.TranslateMessage
+//sys unregisterDeviceNotification(deviceHandle syscall.Handle) (err error) = user32.UnregisterDeviceNotification
+//sys getMessage(msg *msg, hwnd syscall.Handle, msgFilterMin uint32, msgFilterMax uint32) (err error) = user32.GetMessageA
 //sys dispatchMessage(msg *msg) (res int32, err error) = user32.DispatchMessageA
 
 type wndClass struct {
@@ -67,13 +69,7 @@ type msg struct {
 	lPrivate int32
 }
 
-const wsExDlgModalFrame = 0x00000001
 const wsExTopmost = 0x00000008
-const wsExTransparent = 0x00000020
-const wsExMDIChild = 0x00000040
-const wsExToolWindow = 0x00000080
-const wsExAppWindow = 0x00040000
-const wsExLayered = 0x00080000
 
 type guid struct {
 	data1 uint32
@@ -90,30 +86,33 @@ type devBroadcastDeviceInterface struct {
 	szName       uint16
 }
 
-//var usbEventGUID = guid{???} // TODO
+// USB devices GUID used to filter notifications
+var usbEventGUID guid = guid{
+	data1: 0x10bfdca5,
+	data2: 0x3065,
+	data3: 0xd211,
+	data4: [8]byte{0x90, 0x1f, 0x00, 0xc0, 0x4f, 0xb9, 0x51, 0xed},
+}
 
 const deviceNotifyWindowHandle = 0
-const deviceNotifySserviceHandle = 1
 const deviceNotifyAllInterfaceClasses = 4
-
 const dbtDevtypeDeviceInterface = 5
 
-func init() {
-	runtime.LockOSThread()
-}
+type WindowProcCallback func(hwnd syscall.Handle, msg uint32, wParam uintptr, lParam uintptr) uintptr
 
 // Start the sync process, successful events will be passed to eventCB, errors to errorCB.
 // Returns a channel used to stop the sync process.
 // Returns error if sync process can't be started.
 func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (chan<- bool, error) {
-	startResult := make(chan error)
-	event := make(chan bool, 1)
-	go func() {
-		initAndRunWindowHandler(startResult, event)
-	}()
-	if err := <-startResult; err != nil {
-		return nil, err
+	eventsChan := make(chan bool, 1)
+	windowCallback := func(hwnd syscall.Handle, msg uint32, wParam uintptr, lParam uintptr) uintptr {
+		select {
+		case eventsChan <- true:
+		default:
+		}
+		return defWindowProc(hwnd, msg, wParam, lParam)
 	}
+
 	go func() {
 		current, err := enumerator.GetDetailedPortsList()
 		if err != nil {
@@ -125,18 +124,15 @@ func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (ch
 		}
 
 		for {
-			<-event
-
-			// Wait 100 ms to pile up events
-			time.Sleep(100 * time.Millisecond)
 			select {
-			case <-event:
+			case ev := <-eventsChan:
 				// Just one event could be queued because the channel has size 1
 				// (more events coming after this one are discarded on send)
+				if !ev {
+					return
+				}
 			default:
 			}
-
-			// Send updates
 			updates, err := enumerator.GetDetailedPortsList()
 			if err != nil {
 				errorCB(fmt.Sprintf("Error enumerating serial ports: %s", err))
@@ -146,72 +142,127 @@ func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (ch
 			current = updates
 		}
 	}()
-	quit := make(chan bool)
+
+	// Context used to stop the goroutine that consume the window messages
+	ctx, cancel := context.WithCancel(context.Background())
+
+	stopper := make(chan bool)
 	go func() {
-		<-quit
-		// TODO: implement termination channel
+		// Lock this goroutine to the same OS thread for its whole execution,
+		// if this is not done destruction of the windows will fail since
+		// it must be done in the same thread that creates it
+		runtime.LockOSThread()
+		defer close(eventsChan)
+
+		// We must create the window used to receive notifications in the same
+		// thread that destroys it otherwise it would fail
+		windowHandle, className, err := createWindow(windowCallback)
+		if err != nil {
+			errorCB(err.Error())
+			return
+		}
+		defer func() {
+			if err := destroyWindow(windowHandle, className); err != nil {
+				errorCB(err.Error())
+			}
+		}()
+
+		notificationsDevHandle, err := registerNotifications(windowHandle)
+		if err != nil {
+			errorCB(err.Error())
+			return
+		}
+		defer func() {
+			if err := unregisterNotifications(notificationsDevHandle); err != nil {
+				errorCB(err.Error())
+			}
+		}()
+		defer cancel()
+
+		// To consume messages we need the window handle, so we must start
+		// this goroutine in here and not outside the one that handles
+		// creation and destruction of the window used to receive notifications
+		go func() {
+			if err := consumeMessages(ctx, windowHandle); err != nil {
+				errorCB(err.Error())
+			}
+		}()
+
+		<-stopper
 	}()
-	return quit, nil
+	return stopper, nil
 }
 
-func initAndRunWindowHandler(startResult chan<- error, event chan<- bool) {
-	handle, err := getModuleHandle(nil)
+func createWindow(windowCallback WindowProcCallback) (syscall.Handle, *byte, error) {
+	moduleHandle, err := getModuleHandle(nil)
 	if err != nil {
-		startResult <- err
-		return
+		return syscall.InvalidHandle, nil, err
 	}
 
-	wndProc := func(hwnd syscall.Handle, msg uint32, wParam uintptr, lParam uintptr) uintptr {
-		select {
-		case event <- true:
-		default:
-		}
-		return defWindowProc(hwnd, msg, wParam, lParam)
+	className, err := syscall.BytePtrFromString("arduino-serialdiscovery")
+	if err != nil {
+		return syscall.InvalidHandle, nil, err
 	}
-
-	className := syscall.StringBytePtr("serialdiscovery")
 	windowClass := &wndClass{
-		instance:  handle,
+		instance:  moduleHandle,
 		className: className,
-		wndProc:   syscall.NewCallback(wndProc),
+		wndProc:   syscall.NewCallback(windowCallback),
 	}
 	if _, err := registerClass(windowClass); err != nil {
-		startResult <- fmt.Errorf("registering new window: %s", err)
-		return
+		return syscall.InvalidHandle, nil, fmt.Errorf("registering new window: %s", err)
 	}
 
-	hwnd, err := createWindowEx(wsExTopmost, className, className, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+	windowHandle, err := createWindowEx(wsExTopmost, className, className, 0, 0, 0, 0, 0, 0, 0, 0, 0)
 	if err != nil {
-		startResult <- fmt.Errorf("creating window: %s", err)
-		return
+		return syscall.InvalidHandle, nil, fmt.Errorf("creating window: %s", err)
 	}
+	return windowHandle, className, nil
+}
 
+func destroyWindow(windowHandle syscall.Handle, className *byte) error {
+	if err := destroyWindowEx(windowHandle); err != nil {
+		return fmt.Errorf("error destroying window: %s", err)
+	}
+	if err := unregisterClass(className); err != nil {
+		return fmt.Errorf("error unregistering window class: %s", err)
+	}
+	return nil
+}
+
+func registerNotifications(windowHandle syscall.Handle) (syscall.Handle, error) {
 	notificationFilter := devBroadcastDeviceInterface{
 		dwDeviceType: dbtDevtypeDeviceInterface,
-		// TODO: Filter USB events using the correct GUID
+		classGUID:    usbEventGUID,
 	}
 	notificationFilter.dwSize = uint32(unsafe.Sizeof(notificationFilter))
 
-	if _, err := registerDeviceNotification(
-		hwnd,
-		&notificationFilter,
-		deviceNotifyWindowHandle|deviceNotifyAllInterfaceClasses); err != nil {
-		startResult <- fmt.Errorf("registering for devices notification: %s", err)
-		return
+	var flags uint32 = deviceNotifyWindowHandle | deviceNotifyAllInterfaceClasses
+	notificationsDevHandle, err := registerDeviceNotification(windowHandle, &notificationFilter, flags)
+	if err != nil {
+		return syscall.InvalidHandle, err
 	}
 
-	startResult <- nil
+	return notificationsDevHandle, nil
+}
 
+func unregisterNotifications(notificationsDevHandle syscall.Handle) error {
+	if err := unregisterDeviceNotification(notificationsDevHandle); err != nil {
+		return fmt.Errorf("error unregistering device notifications: %s", err)
+	}
+	return nil
+}
+
+func consumeMessages(ctx context.Context, windowHandle syscall.Handle) error {
 	var m msg
 	for {
-		if res, err := getMessage(&m, hwnd, 0, 0); res == 0 || res == -1 {
-			if err != nil {
-				// TODO: send err and stop sync mode.
-				// fmt.Println(err)
-			}
-			break
+		select {
+		case <-ctx.Done():
+			return nil
+		default:
 		}
-		translateMessage(&m)
+		if err := getMessage(&m, windowHandle, 0, 0); err != nil {
+			return fmt.Errorf("error consuming messages: %s", err)
+		}
 		dispatchMessage(&m)
 	}
 }
