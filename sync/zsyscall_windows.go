@@ -41,14 +41,16 @@ var (
 	modkernel32 = windows.NewLazySystemDLL("kernel32.dll")
 	moduser32   = windows.NewLazySystemDLL("user32.dll")
 
-	procGetModuleHandleA            = modkernel32.NewProc("GetModuleHandleA")
-	procCreateWindowExA             = moduser32.NewProc("CreateWindowExA")
-	procDefWindowProcW              = moduser32.NewProc("DefWindowProcW")
-	procDispatchMessageA            = moduser32.NewProc("DispatchMessageA")
-	procGetMessageA                 = moduser32.NewProc("GetMessageA")
-	procRegisterClassA              = moduser32.NewProc("RegisterClassA")
-	procRegisterDeviceNotificationA = moduser32.NewProc("RegisterDeviceNotificationA")
-	procTranslateMessage            = moduser32.NewProc("TranslateMessage")
+	procGetModuleHandleA             = modkernel32.NewProc("GetModuleHandleA")
+	procCreateWindowExA              = moduser32.NewProc("CreateWindowExA")
+	procDefWindowProcW               = moduser32.NewProc("DefWindowProcW")
+	procDestroyWindow                = moduser32.NewProc("DestroyWindow")
+	procDispatchMessageA             = moduser32.NewProc("DispatchMessageA")
+	procGetMessageA                  = moduser32.NewProc("GetMessageA")
+	procRegisterClassA               = moduser32.NewProc("RegisterClassA")
+	procRegisterDeviceNotificationA  = moduser32.NewProc("RegisterDeviceNotificationA")
+	procUnregisterClassA             = moduser32.NewProc("UnregisterClassA")
+	procUnregisterDeviceNotification = moduser32.NewProc("UnregisterDeviceNotification")
 )
 
 func getModuleHandle(moduleName *byte) (handle syscall.Handle, err error) {
@@ -75,6 +77,14 @@ func defWindowProc(hwnd syscall.Handle, msg uint32, wParam uintptr, lParam uintp
 	return
 }
 
+func destroyWindowEx(hwnd syscall.Handle) (err error) {
+	r1, _, e1 := syscall.Syscall(procDestroyWindow.Addr(), 1, uintptr(hwnd), 0, 0)
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
 func dispatchMessage(msg *msg) (res int32, err error) {
 	r0, _, e1 := syscall.Syscall(procDispatchMessageA.Addr(), 1, uintptr(unsafe.Pointer(msg)), 0, 0)
 	res = int32(r0)
@@ -84,10 +94,9 @@ func dispatchMessage(msg *msg) (res int32, err error) {
 	return
 }
 
-func getMessage(msg *msg, hwnd syscall.Handle, msgFilterMin uint32, msgFilterMax uint32) (res int32, err error) {
-	r0, _, e1 := syscall.Syscall6(procGetMessageA.Addr(), 4, uintptr(unsafe.Pointer(msg)), uintptr(hwnd), uintptr(msgFilterMin), uintptr(msgFilterMax), 0, 0)
-	res = int32(r0)
-	if res == 0 {
+func getMessage(msg *msg, hwnd syscall.Handle, msgFilterMin uint32, msgFilterMax uint32) (err error) {
+	r1, _, e1 := syscall.Syscall6(procGetMessageA.Addr(), 4, uintptr(unsafe.Pointer(msg)), uintptr(hwnd), uintptr(msgFilterMin), uintptr(msgFilterMax), 0, 0)
+	if r1 == 0 {
 		err = errnoErr(e1)
 	}
 	return
@@ -111,8 +120,18 @@ func registerDeviceNotification(recipient syscall.Handle, filter *devBroadcastDe
 	return
 }
 
-func translateMessage(msg *msg) (res bool) {
-	r0, _, _ := syscall.Syscall(procTranslateMessage.Addr(), 1, uintptr(unsafe.Pointer(msg)), 0, 0)
-	res = r0 != 0
+func unregisterClass(className *byte) (err error) {
+	r1, _, e1 := syscall.Syscall(procUnregisterClassA.Addr(), 1, uintptr(unsafe.Pointer(className)), 0, 0)
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
+	return
+}
+
+func unregisterDeviceNotification(deviceHandle syscall.Handle) (err error) {
+	r1, _, e1 := syscall.Syscall(procUnregisterDeviceNotification.Addr(), 1, uintptr(deviceHandle), 0, 0)
+	if r1 == 0 {
+		err = errnoErr(e1)
+	}
 	return
 }
