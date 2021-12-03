@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"runtime"
 	"syscall"
+	"time"
 	"unsafe"
 
 	discovery "github.com/arduino/pluggable-discovery-protocol-handler/v2"
@@ -131,7 +132,8 @@ func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (ch
 				if !ev {
 					return
 				}
-			default:
+			case <-time.After(time.Millisecond * 500):
+				// Use a small timeout instead of default case to avoid high CPU consumption
 			}
 			updates, err := enumerator.GetDetailedPortsList()
 			if err != nil {
