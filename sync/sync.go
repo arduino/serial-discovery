@@ -18,10 +18,65 @@
 package sync
 
 import (
+	"fmt"
+	"regexp"
+	"strings"
+	"os"
+	"path/filepath"
 	"github.com/arduino/go-properties-orderedmap"
 	discovery "github.com/arduino/pluggable-discovery-protocol-handler/v2"
 	"go.bug.st/serial/enumerator"
 )
+
+var loaded = false
+var filter = ""
+
+func load() string {
+	if loaded {
+		return filter
+	}
+
+	loaded = true
+	thepath, err := filepath.Abs(filepath.Dir(os.Args[0]))
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
+		return filter
+	}
+
+	data, err := os.ReadFile(filepath.Join(thepath, "skip.txt"))
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
+		return filter
+	}
+
+	filter = strings.Trim(string(data), " \t\r\n")
+
+	return filter
+}
+
+func filterValid(ports []*enumerator.PortDetails) (ret []*enumerator.PortDetails) {
+	filter := load()
+
+	if len(filter) <= 0 {
+		ret = ports
+		return
+	}
+
+	for _, port := range ports {
+		if isValid(port, filter) {
+			ret = append(ret, port)
+		}
+	}
+	return
+}
+
+func isValid(port *enumerator.PortDetails, filter string) bool {
+	match, _ := regexp.MatchString(filter, port.Name)
+
+	return !match;
+}
 
 // processUpdates sends 'add' and 'remove' events by comparing two ports enumeration
 // made at different times:

@@ -120,6 +120,9 @@ func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (ch
 			errorCB(fmt.Sprintf("Error enumerating serial ports: %s", err))
 			return
 		}
+
+		current = filterValid(current)
+
 		for _, port := range current {
 			eventCB("add", toDiscoveryPort(port))
 		}
@@ -140,6 +143,9 @@ func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (ch
 				errorCB(fmt.Sprintf("Error enumerating serial ports: %s", err))
 				return
 			}
+
+			updates = filterValid(updates)
+
 			processUpdates(current, updates, eventCB)
 			current = updates
 		}

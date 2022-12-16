@@ -36,6 +36,8 @@ func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (ch
 		return nil, err
 	}
 
+	current = filterValid(current)
+
 	// Start sync reader from udev
 	syncReader, err := uevent.NewReader()
 	if err != nil {
@@ -75,6 +77,9 @@ func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (ch
 				if err != nil {
 					continue
 				}
+
+				portList = filterValid(portList)
+
 				for _, port := range portList {
 					if port.IsUSB && port.Name == changedPort {
 						eventCB("add", toDiscoveryPort(port))
