@@ -65,12 +65,14 @@ func portListHas(list []*enumerator.PortDetails, port *enumerator.PortDetails) b
 
 func toDiscoveryPort(port *enumerator.PortDetails) *discovery.Port {
 	protocolLabel := "Serial Port"
+	hardwareID := ""
 	props := properties.NewMap()
 	if port.IsUSB {
 		protocolLabel += " (USB)"
 		props.Set("vid", "0x"+port.VID)
 		props.Set("pid", "0x"+port.PID)
 		props.Set("serialNumber", port.SerialNumber)
+		hardwareID = port.SerialNumber
 	}
 	res := &discovery.Port{
 		Address:       port.Name,
@@ -78,6 +80,7 @@ func toDiscoveryPort(port *enumerator.PortDetails) *discovery.Port {
 		Protocol:      "serial",
 		ProtocolLabel: protocolLabel,
 		Properties:    props,
+		HardwareID:    hardwareID,
 	}
 	return res
 }
