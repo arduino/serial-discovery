@@ -89,6 +89,7 @@ The `LIST` command returns a list of the currently available serial ports. The f
         "vid": "0x2341",
         "serialNumber": "EBEABFD6514D32364E202020FF10181E"
       },
+      "hardwareId": "EBEABFD6514D32364E202020FF10181E",
       "protocol": "serial",
       "protocolLabel": "Serial Port (USB)"
     }
@@ -112,7 +113,7 @@ The immediate response to the command is:
 }
 ```
 
-after that the discovery enters in "events" mode.
+after that the discovery enters the "events" mode.
 
 The `add` events looks like the following:
 
@@ -127,6 +128,7 @@ The `add` events looks like the following:
       "vid": "0x2341",
       "serialNumber": "EBEABFD6514D32364E202020FF10181E"
     },
+    "hardwareId": "EBEABFD6514D32364E202020FF10181E",
     "protocol": "serial",
     "protocolLabel": "Serial Port (USB)"
   }
@@ -173,7 +175,8 @@ LIST
         "pid": "0x004e",
         "serialNumber": "EBEABFD6514D32364E202020FF10181E",
         "vid": "0x2341"
-      }
+      },
+      "hardwareId": "EBEABFD6514D32364E202020FF10181E"
     }
   ]
 }
@@ -193,7 +196,8 @@ START_SYNC
       "pid": "0x004e",
       "serialNumber": "EBEABFD6514D32364E202020FF10181E",
       "vid": "0x2341"
-    }
+    },
+    "hardwareId": "EBEABFD6514D32364E202020FF10181E"
   }
 }
 {                                  <--- the board has been disconnected here
@@ -214,7 +218,8 @@ START_SYNC
       "pid": "0x004e",
       "serialNumber": "EBEABFD6514D32364E202020FF10181E",
       "vid": "0x2341"
-    }
+    },
+    "hardwareId": "EBEABFD6514D32364E202020FF10181E"
   }
 }
 QUIT
