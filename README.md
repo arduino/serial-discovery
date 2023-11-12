@@ -240,7 +240,7 @@ e-mail contact: security@arduino.cc
 
 ## License
 
-Copyright (c) 2018 ARDUINO SA (www.arduino.cc)
+Copyright (c) 2018 ARDUINO SA (www<!---->.arduino<!---->.cc)
 
 The software is released under the GNU General Public License, which covers the main body
 of the serial-discovery code. The terms of this license can be found at:
