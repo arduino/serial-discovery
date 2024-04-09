@@ -15,6 +15,19 @@
 // a commercial license, send an email to license@arduino.cc.
 //
 
+// Package sync provides functions for synchronizing and processing updates
+// related to serial port discovery.
+//
+// This package includes functions for comparing two lists of serial ports and
+// sending 'add' and 'remove' events based on the differences between the lists.
+// It also includes utility functions for converting port details to the discovery
+// protocol format.
+//
+// The main function in this package is `processUpdates`, which takes in two lists
+// of serial port details and an event callback function. It compares the two lists
+// and sends 'add' and 'remove' events based on the differences. The `portListHas`
+// function is used to check if a port is contained in a list, and the `toDiscoveryPort`
+// function is used to convert port details to the discovery protocol format.
 package sync
 
 import (
@@ -23,6 +36,7 @@ import (
 	"go.bug.st/serial/enumerator"
 )
 
+// nolint
 // processUpdates sends 'add' and 'remove' events by comparing two ports enumeration
 // made at different times:
 // - ports present in the new list but not in the old list are reported as 'added'
@@ -44,6 +58,7 @@ func processUpdates(old, new []*enumerator.PortDetails, eventCB discovery.EventC
 	}
 }
 
+// nolint
 // portListHas checks if port is contained in list. The port metadata are
 // compared in particular the port address, and vid/pid if the port is a usb port.
 func portListHas(list []*enumerator.PortDetails, port *enumerator.PortDetails) bool {

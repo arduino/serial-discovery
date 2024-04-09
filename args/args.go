@@ -15,6 +15,9 @@
 // a commercial license, send an email to license@arduino.cc.
 //
 
+// Package args provides functionality to parse command-line arguments.
+// It includes a function to parse arguments passed by the user and a variable to check if the version flag is set.
+// The package also handles invalid arguments by printing an error message and exiting the program.
 package args
 
 import (

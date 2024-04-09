@@ -15,6 +15,7 @@
 // a commercial license, send an email to license@arduino.cc.
 //
 
+// Package main implements the serial discovery
 package main
 
 import (
@@ -48,6 +49,7 @@ type SerialDiscovery struct {
 }
 
 // Hello is the handler for the pluggable-discovery HELLO command
+// revive:disable:unused-parameter
 func (d *SerialDiscovery) Hello(userAgent string, protocolVersion int) error {
 	return nil
 }
@@ -68,10 +70,10 @@ func (d *SerialDiscovery) Stop() error {
 
 // StartSync is the handler for the pluggable-discovery START_SYNC command
 func (d *SerialDiscovery) StartSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) error {
-	close, err := sync.Start(eventCB, errorCB)
+	done, err := sync.Start(eventCB, errorCB)
 	if err != nil {
 		return err
 	}
-	d.closeChan = close
+	d.closeChan = done
 	return nil
 }
