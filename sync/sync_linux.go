@@ -45,7 +45,10 @@ func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (ch
 	closeChan := make(chan bool)
 	go func() {
 		<-closeChan
-		syncReader.Close()
+		err := syncReader.Close()
+		if err != nil {
+			errorCB(fmt.Sprintf("Error closing sync reader: %s", err))
+		}
 	}()
 
 	// Run synchronous event emitter
