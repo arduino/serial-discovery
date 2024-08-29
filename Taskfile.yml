@@ -4,8 +4,15 @@ includes:
   dist: ./DistTasks.yml
 
 vars:
+  # Path of the project's primary Go module:
+  DEFAULT_GO_MODULE_PATH: ./
   DEFAULT_GO_PACKAGES:
-    sh: echo $(go list ./... | tr '\n' ' ')
+    sh: |
+      echo $(
+        cd {{default .DEFAULT_GO_MODULE_PATH .GO_MODULE_PATH}} &&
+        go list ./... | tr '\n' ' ' ||
+        echo '"ERROR: Unable to discover Go packages"'
+      )
   PROJECT_NAME: "serial-discovery"
   DIST_DIR: "dist"
   # build vars
@@ -28,53 +35,45 @@ vars:
     '
 
 tasks:
-  build:
-    desc: Build the project
+  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/go-task/Taskfile.yml
+  go:build:
+    desc: Build the Go code
+    dir: "{{.DEFAULT_GO_MODULE_PATH}}"
     cmds:
       - go build -v {{.LDFLAGS}}
 
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-go-task/Taskfile.yml
-  go:check:
-    desc: Check for problems with Go code
-    deps:
-      - task: go:vet
-      - task: go:lint
-
-  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-go-task/Taskfile.yml
-  go:vet:
-    desc: Check for errors in Go code
-    cmds:
-      - go vet {{default .DEFAULT_GO_PACKAGES .GO_PACKAGES}}
-
-  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-go-task/Taskfile.yml
   go:fix:
     desc: Modernize usages of outdated APIs
+    dir: "{{default .DEFAULT_GO_MODULE_PATH .GO_MODULE_PATH}}"
     cmds:
       - go fix {{default .DEFAULT_GO_PACKAGES .GO_PACKAGES}}
 
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-go-task/Taskfile.yml
   go:lint:
     desc: Lint Go code
+    dir: "{{default .DEFAULT_GO_MODULE_PATH .GO_MODULE_PATH}}"
     cmds:
       - |
-        if ! which golint &>/dev/null; then
-          echo "golint not installed or not in PATH. Please install: https://github.com/golang/lint#installation"
+        if ! which golangci-lint &>/dev/null; then
+          echo "golangci-lint not installed or not in PATH."
+          echo "Please install: https://golangci-lint.run/usage/install/#local-installation"
           exit 1
         fi
-      - |
-        golint \
-          {{default "-min_confidence 0.8 -set_exit_status" .GO_LINT_FLAGS}} \
-          {{default .DEFAULT_GO_PACKAGES .GO_PACKAGES}}
+      - golangci-lint run
 
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-go-task/Taskfile.yml
   go:format:
     desc: Format Go code
+    dir: "{{default .DEFAULT_GO_MODULE_PATH .GO_MODULE_PATH}}"
     cmds:
       - go fmt {{default .DEFAULT_GO_PACKAGES .GO_PACKAGES}}
 
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-prettier-formatting-task/Taskfile.yml
   general:format-prettier:
     desc: Format all supported files with Prettier
+    deps:
+      - task: npm:install-deps
     cmds:
       - npx prettier --write .
 
@@ -90,65 +89,71 @@ tasks:
     cmds:
       - poetry update
 
-  docs:generate:
-    desc: Create all generated documentation content
-    # This is an "umbrella" task used to call any documentation generation processes the project has.
-    # It can be left empty if there are none.
-
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-markdown-task/Taskfile.yml
   markdown:lint:
     desc: Check for problems in Markdown files
+    deps:
+      - task: npm:install-deps
     cmds:
       - npx markdownlint-cli "**/*.md"
 
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-markdown-task/Taskfile.yml
   markdown:fix:
     desc: Automatically correct linting violations in Markdown files where possible
+    deps:
+      - task: npm:install-deps
     cmds:
       - npx markdownlint-cli --fix "**/*.md"
 
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-markdown-task/Taskfile.yml
   markdown:check-links:
     desc: Check for broken links
-    deps:
-      - task: docs:generate
-    cmds:
-      - |
-        if [[ "{{.OS}}" == "Windows_NT" ]]; then
-          # npx --call uses the native shell, which makes it too difficult to use npx for this application on Windows,
-          # so the Windows user is required to have markdown-link-check installed and in PATH.
-          if ! which markdown-link-check &>/dev/null; then
-            echo "markdown-link-check not found or not in PATH. Please install: https://github.com/tcort/markdown-link-check#readme"
-            exit 1
-          fi
-          # Default behavior of the task on Windows is to exit the task when the first broken link causes a non-zero
-          # exit status, but it's better to check all links before exiting.
-          set +o errexit
-          STATUS=0
-          # Using -regex instead of -name to avoid Task's behavior of globbing even when quoted on Windows
-          # The odd method for escaping . in the regex is required for windows compatibility because mvdan.cc/sh gives
-          # \ characters special treatment on Windows in an attempt to support them as path separators.
-          for file in $(find . -regex ".*[.]md"); do
-            markdown-link-check \
-              --quiet \
-              --config "./.markdown-link-check.json" \
-              "$file"
-            STATUS=$(( $STATUS + $? ))
-          done
-          exit $STATUS
-        else
-          npx --package=markdown-link-check --call='
-            STATUS=0
-            for file in $(find . -regex ".*[.]md"); do
+    vars:
+      # The command is defined in a Taskfile variable to allow it to be broken into multiple lines for readability.
+      # This can't be done in the `cmd` object of the Taskfile because `npx --call` uses the native shell, which causes
+      # standard newline escaping syntax to not work when the task is run on Windows.
+      #
+      # Using -regex instead of -name to avoid Task's behavior of globbing even when quoted on Windows
+      # The odd method for escaping . in the regex is required for windows compatibility because mvdan.cc/sh gives
+      # \ characters special treatment on Windows in an attempt to support them as path separators.
+      #
+      # prettier-ignore
+      CHECK_LINKS_COMMAND:
+        "
+          find . \
+            -type d -name \".git\" -prune -o \
+            -type d -name \".licenses\" -prune -o \
+            -type d -name \"__pycache__\" -prune -o \
+            -type d -name \"node_modules\" -prune -o \
+            -regex \".*[.]md\" \
+            -exec \
               markdown-link-check \
                 --quiet \
-                --config "./.markdown-link-check.json" \
-                "$file"
-              STATUS=$(( $STATUS + $? ))
-            done
-            exit $STATUS
-          '
-        fi
+                --config \"./.markdown-link-check.json\" \
+                \\{\\} \
+                +
+        "
+    deps:
+      - task: docs:generate
+      - task: npm:install-deps
+    cmds:
+      - |
+        npx \
+          --package=markdown-link-check \
+          --call='{{.CHECK_LINKS_COMMAND}}'
+
+  docs:generate:
+    desc: Create all generated documentation content
+    # This is an "umbrella" task used to call any documentation generation processes the project has.
+    # It can be left empty if there are none.
+
+  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/npm-task/Taskfile.yml
+  npm:install-deps:
+    desc: Install dependencies managed by npm
+    dir: |
+      "{{default "./" .PROJECT_PATH}}"
+    cmds:
+      - npm install
 
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-workflows-task/Taskfile.yml
   ci:validate:
@@ -157,8 +162,10 @@ tasks:
       # Source: https://github.com/SchemaStore/schemastore/blob/master/src/schemas/json/github-workflow.json
       WORKFLOW_SCHEMA_URL: https://json.schemastore.org/github-workflow
       WORKFLOW_SCHEMA_PATH:
-        sh: mktemp -t workflow-schema-XXXXXXXXXX.json
+        sh: task utility:mktemp-file TEMPLATE="workflow-schema-XXXXXXXXXX.json"
       WORKFLOWS_DATA_PATH: "./.github/workflows/*.{yml,yaml}"
+    deps:
+      - task: npm:install-deps
     cmds:
       - |
         wget \
@@ -187,14 +194,17 @@ tasks:
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-dependencies-task/Taskfile.yml
   general:cache-dep-licenses:
     desc: Cache dependency license metadata
+    deps:
+      - task: general:prepare-deps
     cmds:
       - |
         if ! which licensed &>/dev/null; then
-          if [[ "{{OS}}" == "windows" ]]; then
+          if [[ {{OS}} == "windows" ]]; then
             echo "Licensed does not have Windows support."
             echo "Please use Linux/macOS or download the dependencies cache from the GitHub Actions workflow artifact."
           else
-            echo "licensed not found or not in PATH. Please install: https://github.com/github/licensed#as-an-executable"
+            echo "licensed not found or not in PATH."
+            echo "Please install: https://github.com/github/licensed#as-an-executable"
           fi
           exit 1
         fi
@@ -207,6 +217,11 @@ tasks:
       - task: general:cache-dep-licenses
     cmds:
       - licensed status
+
+  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/check-go-dependencies-task/Taskfile.yml
+  general:prepare-deps:
+    desc: Prepare project dependencies for license check
+    # No preparation is needed for Go module-based projects.
 
   # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/spell-check-task/Taskfile.yml
   general:check-spelling:
@@ -223,3 +238,38 @@ tasks:
       - task: poetry:install-deps
     cmds:
       - poetry run codespell --write-changes
+
+  # Make a temporary file named according to the passed TEMPLATE variable and print the path passed to stdout
+  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/windows-task/Taskfile.yml
+  utility:mktemp-file:
+    vars:
+      RAW_PATH:
+        sh: mktemp --tmpdir "{{.TEMPLATE}}"
+    cmds:
+      - task: utility:normalize-path
+        vars:
+          RAW_PATH: "{{.RAW_PATH}}"
+
+  # Make a temporary folder named according to the passed TEMPLATE variable and print the path passed to stdout
+  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/windows-task/Taskfile.yml
+  utility:mktemp-folder:
+    vars:
+      RAW_PATH:
+        sh: mktemp --directory --tmpdir "{{.TEMPLATE}}"
+    cmds:
+      - task: utility:normalize-path
+        vars:
+          RAW_PATH: "{{.RAW_PATH}}"
+
+  # Print a normalized version of the path passed via the RAW_PATH variable to stdout
+  # Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/windows-task/Taskfile.yml
+  utility:normalize-path:
+    cmds:
+      - |
+        if [[ "{{.OS}}" == "Windows_NT" ]] && which cygpath &>/dev/null; then
+            # Even though the shell handles POSIX format absolute paths as expected, external applications do not.
+            # So paths passed to such applications must first be converted to Windows format.
+            cygpath -w "{{.RAW_PATH}}"
+        else
+          echo "{{.RAW_PATH}}"
+        fi
