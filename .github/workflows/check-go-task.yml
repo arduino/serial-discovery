@@ -123,7 +123,7 @@ jobs:
       - name: Install golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
-          version: v1.54
+          version: v2.5.0
 
       - name: Check style
         env:
