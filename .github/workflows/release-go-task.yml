@@ -98,7 +98,7 @@ jobs:
 
     steps:
       - name: Download artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           pattern: ${{ env.ARTIFACT_PREFIX }}*
           merge-multiple: true
