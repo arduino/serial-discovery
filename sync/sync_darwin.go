@@ -64,6 +64,9 @@ func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (ch
 			errorCB(err.Error())
 			return
 		}
+
+		current = filterValid(current)
+
 		for _, port := range current {
 			eventCB("add", toDiscoveryPort(port))
 		}
@@ -98,6 +101,9 @@ func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (ch
 					enumeratorErr = err
 					break
 				}
+
+				updates = filterValid(updates)
+
 				processUpdates(current, updates, eventCB)
 				current = updates
 			}
