@@ -19,9 +19,14 @@
 
 package sync
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+
+	discovery "github.com/arduino/pluggable-discovery-protocol-handler/v2"
+)
 
 // Start fallback implementation
-func Start() (chan<- bool, error) {
-	return nil, fmt.Errorf("Command START_SYNC not supported")
+func Start(ctx context.Context, eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) error {
+	return fmt.Errorf("Command START_SYNC not supported")
 }

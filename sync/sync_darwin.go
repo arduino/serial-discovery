@@ -18,6 +18,7 @@
 package sync
 
 import (
+	"context"
 	"fmt"
 	"syscall"
 
@@ -28,17 +29,17 @@ import (
 // Start the sync process, successful events will be passed to eventCB, errors to errorCB.
 // Returns a channel used to stop the sync process.
 // Returns error if sync process can't be started.
-func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (chan<- bool, error) {
+func Start(ctx context.Context, eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) error {
 	// create kqueue
 	kq, err := syscall.Kqueue()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// open folder
 	fd, err := syscall.Open("/dev", syscall.O_RDONLY, 0)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// build kevent
@@ -52,8 +53,6 @@ func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (ch
 	}
 
 	// Run synchronous event emitter
-	closeChan := make(chan bool)
-
 	go func() {
 		defer syscall.Close(fd)
 		defer syscall.Close(kq)
@@ -75,7 +74,7 @@ func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (ch
 			t100ms := syscall.Timespec{Nsec: 100_000_000, Sec: 0}
 			n, err := syscall.Kevent(kq, []syscall.Kevent_t{ev1}, events, &t100ms)
 			select {
-			case <-closeChan:
+			case <-ctx.Done():
 				return
 			default:
 			}
@@ -107,8 +106,8 @@ func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (ch
 			}
 		}
 
-		<-closeChan
+		<-ctx.Done()
 	}()
 
-	return closeChan, nil
+	return nil
 }

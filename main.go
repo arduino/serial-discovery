@@ -19,6 +19,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -45,7 +46,7 @@ func main() {
 
 // SerialDiscovery is the implementation of the serial ports pluggable-discovery
 type SerialDiscovery struct {
-	closeChan chan<- bool
+	closeChan context.CancelFunc
 }
 
 // Hello is the handler for the pluggable-discovery HELLO command
@@ -61,8 +62,7 @@ func (d *SerialDiscovery) Quit() {
 // Stop is the handler for the pluggable-discovery STOP command
 func (d *SerialDiscovery) Stop() error {
 	if d.closeChan != nil {
-		d.closeChan <- true
-		close(d.closeChan)
+		d.closeChan()
 		d.closeChan = nil
 	}
 	return nil
@@ -70,10 +70,11 @@ func (d *SerialDiscovery) Stop() error {
 
 // StartSync is the handler for the pluggable-discovery START_SYNC command
 func (d *SerialDiscovery) StartSync(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) error {
-	done, err := sync.Start(eventCB, errorCB)
-	if err != nil {
+	ctx, cancel := context.WithCancel(context.Background())
+	if err := sync.Start(ctx, eventCB, errorCB); err != nil {
+		cancel()
 		return err
 	}
-	d.closeChan = done
+	d.closeChan = cancel
 	return nil
 }
