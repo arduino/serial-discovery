@@ -87,6 +87,7 @@ func toDiscoveryPort(port *enumerator.PortDetails) *discovery.Port {
 		props.Set("vid", "0x"+port.VID)
 		props.Set("pid", "0x"+port.PID)
 		props.Set("serialNumber", port.SerialNumber)
+		props.Set("configuration", port.Configuration)
 		hardwareID = port.SerialNumber
 	}
 	res := &discovery.Port{
