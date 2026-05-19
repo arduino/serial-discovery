@@ -6,7 +6,7 @@ require (
 	github.com/arduino/go-properties-orderedmap v1.8.1
 	github.com/arduino/pluggable-discovery-protocol-handler/v2 v2.2.1
 	github.com/s-urbaniak/uevent v1.0.1
-	go.bug.st/serial v1.6.4
+	go.bug.st/serial v1.7.0
 	golang.org/x/sys v0.44.0
 )
 
@@ -65,7 +65,6 @@ require (
 	github.com/clipperhouse/displaywidth v0.11.0 // indirect
 	github.com/clipperhouse/uax29/v2 v2.7.0 // indirect
 	github.com/cncf/xds/go v0.0.0-20251210132809-ee656c7534f5 // indirect
-	github.com/creack/goselect v0.1.2 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
