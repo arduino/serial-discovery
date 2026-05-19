@@ -1,17 +1,6 @@
+# Source: https://github.com/arduino/tooling-project-assets/blob/main/workflow-templates/assets/go/.golangci.yml
+# See: https://golangci-lint.run/usage/configuration/
 version: "2"
 linters:
   enable:
     - revive
-  exclusions:
-    generated: lax
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
-formatters:
-  exclusions:
-    generated: lax
-    paths:
-      - third_party$
-      - builtin$
-      - examples$
