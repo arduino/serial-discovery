@@ -19,7 +19,8 @@ version: "3"
 
 vars:
   CONTAINER: "docker.elastic.co/beats-dev/golang-crossbuild"
-  GO_VERSION: "1.25.2"
+  GO_VERSION:
+    sh: go list -m -f '{{"{{.GoVersion}}"}}'
   CGO_ENABLED: "1"
 
 tasks:
