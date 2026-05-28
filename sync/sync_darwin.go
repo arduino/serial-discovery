@@ -27,7 +27,6 @@ import (
 )
 
 // Start the sync process, successful events will be passed to eventCB, errors to errorCB.
-// Returns a channel used to stop the sync process.
 // Returns error if sync process can't be started.
 func Start(ctx context.Context, eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) error {
 	// create kqueue
