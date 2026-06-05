@@ -102,9 +102,8 @@ const dbtDevtypeDeviceInterface = 5
 type WindowProcCallback func(hwnd syscall.Handle, msg uint32, wParam uintptr, lParam uintptr) uintptr
 
 // Start the sync process, successful events will be passed to eventCB, errors to errorCB.
-// Returns a channel used to stop the sync process.
 // Returns error if sync process can't be started.
-func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (chan<- bool, error) {
+func Start(ctx context.Context, eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) error {
 	eventsChan := make(chan bool, 1)
 	windowCallback := func(hwnd syscall.Handle, msg uint32, wParam uintptr, lParam uintptr) uintptr {
 		select {
@@ -148,7 +147,6 @@ func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (ch
 	// Context used to stop the goroutine that consume the window messages
 	ctx, cancel := context.WithCancel(context.Background())
 
-	stopper := make(chan bool)
 	go func() {
 		// Lock this goroutine to the same OS thread for its whole execution,
 		// if this is not done destruction of the windows will fail since
@@ -190,9 +188,9 @@ func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (ch
 			}
 		}()
 
-		<-stopper
+		<-ctx.Done()
 	}()
-	return stopper, nil
+	return nil
 }
 
 func createWindow(windowCallback WindowProcCallback) (syscall.Handle, *byte, error) {

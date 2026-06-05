@@ -18,6 +18,7 @@
 package sync
 
 import (
+	"context"
 	"fmt"
 	"io"
 
@@ -27,24 +28,22 @@ import (
 )
 
 // Start the sync process, successful events will be passed to eventCB, errors to errorCB.
-// Returns a channel used to stop the sync process.
 // Returns error if sync process can't be started.
-func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (chan<- bool, error) {
+func Start(ctx context.Context, eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) error {
 	// Get the current port list to send as initial "add" events
 	current, err := enumerator.GetDetailedPortsList()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Start sync reader from udev
 	syncReader, err := uevent.NewReader()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	closeChan := make(chan bool)
 	go func() {
-		<-closeChan
+		<-ctx.Done()
 		err := syncReader.Close()
 		if err != nil {
 			errorCB(fmt.Sprintf("Error closing sync reader: %s", err))
@@ -94,5 +93,5 @@ func Start(eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) (ch
 		}
 	}()
 
-	return closeChan, nil
+	return nil
 }
