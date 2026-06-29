@@ -15,6 +15,12 @@
 // a commercial license, send an email to license@arduino.cc.
 //
 
+//go:build darwin || freebsd
+
+//
+// This file is part of serial-discovery.
+//
+
 package sync
 
 import (

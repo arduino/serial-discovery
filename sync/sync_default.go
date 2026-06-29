@@ -15,7 +15,7 @@
 // a commercial license, send an email to license@arduino.cc.
 //
 
-//go:build !linux && !windows && !darwin
+//go:build !linux && !windows && !darwin && !freebsd
 
 package sync
 
