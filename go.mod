@@ -7,7 +7,7 @@ require (
 	github.com/arduino/pluggable-discovery-protocol-handler/v2 v2.2.1
 	github.com/s-urbaniak/uevent v1.0.1
 	go.bug.st/serial v1.7.1
-	golang.org/x/sys v0.44.0
+	golang.org/x/sys v0.45.0
 )
 
 require (
@@ -144,7 +144,7 @@ require (
 	go.yaml.in/yaml/v4 v4.0.0-rc.4 // indirect
 	golang.org/x/crypto v0.51.0 // indirect
 	golang.org/x/mod v0.35.0 // indirect
-	golang.org/x/net v0.54.0 // indirect
+	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/term v0.43.0 // indirect
