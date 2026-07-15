@@ -6,8 +6,8 @@ require (
 	github.com/arduino/go-properties-orderedmap v1.8.1
 	github.com/arduino/pluggable-discovery-protocol-handler/v2 v2.2.1
 	github.com/s-urbaniak/uevent v1.0.1
-	go.bug.st/serial v1.7.1
-	golang.org/x/sys v0.45.0
+	go.bug.st/serial v1.8.0
+	golang.org/x/sys v0.47.0
 )
 
 require (

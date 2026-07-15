@@ -87,9 +87,11 @@ func toDiscoveryPort(port *enumerator.PortDetails) *discovery.Port {
 		props.Set("vid", "0x"+port.VID)
 		props.Set("pid", "0x"+port.PID)
 		props.Set("serialNumber", port.SerialNumber)
-		props.Set("configuration", port.Configuration)
-		props.Set("manufacturer", port.Manufacturer)
-		props.Set("product", port.Product)
+		if activeUSBProbeFilter(port.VID, port.PID) {
+			props.Set("configuration", port.Configuration)
+			props.Set("manufacturer", port.Manufacturer)
+			props.Set("product", port.Product)
+		}
 
 		hardwareID = port.SerialNumber
 	}
@@ -102,4 +104,9 @@ func toDiscoveryPort(port *enumerator.PortDetails) *discovery.Port {
 		HardwareID:    hardwareID,
 	}
 	return res
+}
+
+var activeUSBProbeFilter = func(vid, _ /*pid*/ string) bool {
+	// Only perform active probing on Arduino devices, to avoid issues with some devices that don't support it.
+	return vid == "2341"
 }

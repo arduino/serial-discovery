@@ -57,7 +57,7 @@ func Start(ctx context.Context, eventCB discovery.EventCallback, errorCB discove
 		defer syscall.Close(kq)
 
 		// Output initial port state: get the current port list to send as initial "add" events
-		current, err := enumerator.GetDetailedPortsList()
+		current, err := enumerator.GetDetailedPortsList(activeUSBProbeFilter)
 		if err != nil {
 			errorCB(err.Error())
 			return
@@ -91,7 +91,7 @@ func Start(ctx context.Context, eventCB discovery.EventCallback, errorCB discove
 			// if there is an event retry up to 5 times
 			var enumeratorErr error
 			for retries := 0; retries < 5; retries++ {
-				updates, err := enumerator.GetDetailedPortsList()
+				updates, err := enumerator.GetDetailedPortsList(activeUSBProbeFilter)
 				if err != nil {
 					enumeratorErr = err
 					break

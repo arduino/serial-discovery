@@ -31,7 +31,7 @@ import (
 // Returns error if sync process can't be started.
 func Start(ctx context.Context, eventCB discovery.EventCallback, errorCB discovery.ErrorCallback) error {
 	// Get the current port list to send as initial "add" events
-	current, err := enumerator.GetDetailedPortsList()
+	current, err := enumerator.GetDetailedPortsList(activeUSBProbeFilter)
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func Start(ctx context.Context, eventCB discovery.EventCallback, errorCB discove
 			}
 			changedPort := "/dev/" + evt.Vars["DEVNAME"]
 			if evt.Action == "add" {
-				portList, err := enumerator.GetDetailedPortsList()
+				portList, err := enumerator.GetDetailedPortsList(activeUSBProbeFilter)
 				if err != nil {
 					continue
 				}
