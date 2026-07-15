@@ -114,7 +114,7 @@ func Start(ctx context.Context, eventCB discovery.EventCallback, errorCB discove
 	}
 
 	go func() {
-		current, err := enumerator.GetDetailedPortsList()
+		current, err := enumerator.GetDetailedPortsList(activeUSBProbeFilter)
 		if err != nil {
 			errorCB(fmt.Sprintf("Error enumerating serial ports: %s", err))
 			return
@@ -134,7 +134,7 @@ func Start(ctx context.Context, eventCB discovery.EventCallback, errorCB discove
 			case <-time.After(time.Millisecond * 500):
 				// Use a small timeout instead of default case to avoid high CPU consumption
 			}
-			updates, err := enumerator.GetDetailedPortsList()
+			updates, err := enumerator.GetDetailedPortsList(activeUSBProbeFilter)
 			if err != nil {
 				errorCB(fmt.Sprintf("Error enumerating serial ports: %s", err))
 				return
