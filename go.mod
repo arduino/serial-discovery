@@ -2,6 +2,8 @@ module github.com/arduino/serial-discovery
 
 go 1.26.0
 
+replace go.bug.st/serial => github.com/facchinm/go-serial v0.0.0-20260721142242-f705fc98b886
+
 require (
 	github.com/arduino/go-properties-orderedmap v1.8.1
 	github.com/arduino/pluggable-discovery-protocol-handler/v2 v2.2.1
