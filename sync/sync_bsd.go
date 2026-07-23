@@ -15,6 +15,8 @@
 // a commercial license, send an email to license@arduino.cc.
 //
 
+//go:build darwin || freebsd
+
 package sync
 
 import (
