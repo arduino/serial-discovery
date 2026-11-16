@@ -9,7 +9,7 @@ require (
 	github.com/arduino/pluggable-discovery-protocol-handler/v2 v2.2.1
 	github.com/s-urbaniak/uevent v1.0.1
 	go.bug.st/serial v1.8.0
-	golang.org/x/sys v0.48.0
+	golang.org/x/sys v0.50.0
 )
 
 require (
