@@ -12,3 +12,12 @@ updates:
     labels:
       - "topic: dependencies"
       - "topic: infrastructure"
+
+  - package-ecosystem: gomod
+    directory: /
+    assignees:
+      - per1234
+    labels:
+      - "topic: dependencies"
+    schedule:
+      interval: daily
