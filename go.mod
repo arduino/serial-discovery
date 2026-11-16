@@ -1,12 +1,12 @@
 module github.com/arduino/serial-discovery
 
-go 1.26.0
+go 1.26.1
 
 replace go.bug.st/serial => github.com/facchinm/go-serial v0.0.0-20260721142242-f705fc98b886
 
 require (
 	github.com/arduino/go-properties-orderedmap v1.9.1
-	github.com/arduino/pluggable-discovery-protocol-handler/v2 v2.2.1
+	github.com/arduino/pluggable-discovery-protocol-handler/v2 v2.2.4
 	github.com/s-urbaniak/uevent v1.0.1
 	go.bug.st/serial v1.8.0
 	golang.org/x/sys v0.50.0
@@ -116,7 +116,7 @@ require (
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.4.3 // indirect
 	github.com/pierrec/lz4/v4 v4.1.27 // indirect
-	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
+	github.com/planetscale/vtprotobuf v0.6.1-0.20250313105119-ba97887b0a25 // indirect
 	github.com/puzpuzpuz/xsync/v4 v4.5.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sajari/fuzzy v1.0.0 // indirect

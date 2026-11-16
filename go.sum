@@ -58,8 +58,8 @@ github.com/arduino/go-paths-helper v1.14.0 h1:b4C8KJa7CNz2XnzTWg97M3LAmzWSWrj+m/
 github.com/arduino/go-paths-helper v1.14.0/go.mod h1:dDodKn2ZX4iwuoBMapdDO+5d0oDLBeM4BS0xS4i40Ak=
 github.com/arduino/go-properties-orderedmap v1.9.1 h1:c+qfKz1ceE2nEgbXNAJL3kAI8JxvNqWZoVSOL0zWhCc=
 github.com/arduino/go-properties-orderedmap v1.9.1/go.mod h1:6JXfyKBfcDEduXqCXDVuopJZWJhkjEGp67YdAWYixdo=
-github.com/arduino/pluggable-discovery-protocol-handler/v2 v2.2.1 h1:Fw8zKj1b/FkcQrWgN7aBw3ubSxpKIUtdANLXvd1Qdzw=
-github.com/arduino/pluggable-discovery-protocol-handler/v2 v2.2.1/go.mod h1:1dgblsmK2iBx3L5iNTyRIokeaxbTLUrYiUbHBK6yC3Y=
+github.com/arduino/pluggable-discovery-protocol-handler/v2 v2.2.4 h1:+1SoFO14p1VlTqUEKoRFSfJa58tkqOpkl0C2VMN3sno=
+github.com/arduino/pluggable-discovery-protocol-handler/v2 v2.2.4/go.mod h1:3ymWvzQ9gRqyrhLq0FSZIeDOkyC8gPFRsvMpmON8zao=
 github.com/atotto/clipboard v0.1.4 h1:EH0zSVneZPSuFR11BlR9YppQTVDbh5+16AmcJi4g1z4=
 github.com/atotto/clipboard v0.1.4/go.mod h1:ZY9tmq7sm5xIbd9bOK4onWV4S6X0u6GY7Vn0Yu86PYI=
 github.com/aws/aws-sdk-go-v2 v1.43.4 h1:b9FTvbRwy+JCsfp2Wp6wV/KbOx3Aj7nkoFb2cRX0IhE=
@@ -251,8 +251,8 @@ github.com/pierrec/lz4/v4 v4.1.27 h1:+PhzhWDrjRj89TH2sw43nE3+4+W8lSxIuQadEHZyjUk
 github.com/pierrec/lz4/v4 v4.1.27/go.mod h1:EoQMVJgeeEOMsCqCzqFm2O0cJvljX2nGZjcRIPL34O4=
 github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e h1:aoZm08cpOy4WuID//EZDgcC4zIxODThtZNPirFr42+A=
 github.com/pkg/diff v0.0.0-20210226163009-20ebb0f2a09e/go.mod h1:pJLUxLENpZxwdsKMEsNbx1VGcRFpLqf3715MtcvvzbA=
-github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 h1:GFCKgmp0tecUJ0sJuv4pzYCqS9+RGSn52M3FUwPs+uo=
-github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10/go.mod h1:t/avpk3KcrXxUnYOhZhMXJlSEyie6gQbtLq5NM3loB8=
+github.com/planetscale/vtprotobuf v0.6.1-0.20250313105119-ba97887b0a25 h1:S1hI5JiKP7883xBzZAr1ydcxrKNSVNm7+3+JwjxZEsg=
+github.com/planetscale/vtprotobuf v0.6.1-0.20250313105119-ba97887b0a25/go.mod h1:ZQntvDG8TkPgljxtA0R9frDoND4QORU1VXz015N5Ks4=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
