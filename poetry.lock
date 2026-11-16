@@ -2,21 +2,19 @@
 
 [[package]]
 name = "codespell"
-version = "2.2.6"
-description = "Codespell"
+version = "2.4.3"
+description = "Fix common misspellings in text files"
 optional = false
-python-versions = ">=3.8"
+python-versions = ">=3.9"
 groups = ["dev"]
 files = [
-    {file = "codespell-2.2.6-py3-none-any.whl", hash = "sha256:9ee9a3e5df0990604013ac2a9f22fa8e57669c827124a2e961fe8a1da4cacc07"},
-    {file = "codespell-2.2.6.tar.gz", hash = "sha256:a8c65d8eb3faa03deabab6b3bbe798bea72e1799c7e9e955d57eca4096abcff9"},
+    {file = "codespell-2.4.3-py3-none-any.whl", hash = "sha256:af2505b335e8573dbd2d384d1c4ef498f4006f4ba2d6fceca01e55b91f52628a"},
+    {file = "codespell-2.4.3.tar.gz", hash = "sha256:cbe085e331227b37bb86ef8bddd08dc768c704ee9a07ca869852c093fa2793e2"},
 ]
 
 [package.extras]
-dev = ["Pygments", "build", "chardet", "pre-commit", "pytest", "pytest-cov", "pytest-dependency", "ruff", "tomli", "twine"]
 hard-encoding-detection = ["chardet"]
 toml = ["tomli ; python_version < \"3.11\""]
-types = ["chardet (>=5.1.0)", "mypy", "pytest", "pytest-cov", "pytest-dependency"]
 
 [[package]]
 name = "pathspec"
@@ -140,4 +138,4 @@ dev = ["doc8", "flake8", "flake8-import-order", "rstcheck[sphinx]", "ruff", "sph
 [metadata]
 lock-version = "2.1"
 python-versions = "~3.15.2"
-content-hash = "04c054249a95d51bd7d3a6e28bd7714b824e62dcc314bbf302708cf826c8a760"
+content-hash = "de0b7ed33e50a597576662a38902bbbccf1cdd8378b8e78bf6d6a4b65c0ce95f"
